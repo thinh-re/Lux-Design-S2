@@ -1,14 +1,17 @@
 import json
-from typing import Dict
 import sys
 from argparse import Namespace
+from typing import Dict
 
 from agent import Agent
 from lux.config import EnvConfig
-from lux.kit import GameState, process_obs, to_json, from_json, process_action, obs_to_game_state
+from lux.kit import (GameState, from_json, obs_to_game_state, process_action,
+                     process_obs, to_json)
+
 ### DO NOT REMOVE THE FOLLOWING CODE ###
 agent_dict = dict() # store potentially multiple dictionaries as kaggle imports code directly
 agent_prev_obs = dict()
+
 def agent_fn(observation, configurations):
     """
     agent definition for kaggle submission.

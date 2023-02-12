@@ -4,9 +4,16 @@
 
 Welcome to the Lux AI Challenge Season 2! 
 
-The Lux AI Challenge is a competition where competitors design agents to tackle a multi-variable optimization, resource gathering, and allocation problem in a 1v1 scenario against other competitors. In addition to optimization, successful agents must be capable of analyzing their opponents and developing appropriate policies to get the upper hand.
+The Lux AI Challenge is a competition where competitors design agents to tackle:
+
+- A multi-variable optimization
+- Resource gathering
+- Allocation problem in a 1v1 scenario against other competitors.
+
+In addition to optimization, successful agents must be capable of **analyzing their opponents** and **developing appropriate policies** to get the upper hand.
 
 Key features this season!
+
 - GPU/TPU optimized environment via Jax
 - Asymmetric maps and novel mechanics (action efficiency and planning)
 - $55,000 Prize Pool
@@ -23,15 +30,14 @@ Interested in Season 1? Check out [last year's repository](https://github.com/Lu
 
 You will need Python >=3.7, <3.11  installed on your system. Once installed, you can install the Lux AI season 2 environment and optionally the GPU version with
 
-```
+```bash
 pip install --upgrade luxai_s2
 pip install juxai-s2 # installs the GPU version, requires a compatible GPU
 ```
 
-
 To verify your installation, you can run the CLI tool by replacing `path/to/bot/main.py` with a path to a bot (e.g. the starter kit in `kits/python/main.py`) and run
 
-```
+```bash
 luxai-s2 path/to/bot/main.py path/to/bot/main.py -v 2 -o replay.json
 ```
 
@@ -59,11 +65,13 @@ For the RL starter kit that trains using the jax env, see https://github.com/Lux
 To stay up to date on changes and updates to the competition and the engine, watch for announcements on the forums or the [Discord](https://discord.gg/aWJt3UAcgn). See [ChangeLog.md](https://github.com/Lux-AI-Challenge/Lux-Design-S2/blob/main/ChangeLog.md) for a full change log.
 
 ## Community Tools
+
 As the community builds tools for the competition, we will post them here!
 
 3rd Party Viewer (This has now been merged into the main repo so check out the lux-eye-s2 folder) - https://github.com/jmerle/lux-eye-2022
 
 ## Contributing
+
 See the [guide on contributing](https://github.com/Lux-AI-Challenge/Lux-Design-S2/blob/main/CONTRIBUTING.md)
 
 ## Sponsors
