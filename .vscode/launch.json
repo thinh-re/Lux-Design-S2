@@ -1,0 +1,24 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run",
+            "type": "python",
+            "request": "launch",
+            "program": "luxai_s2/luxai_runner/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "kits/python/main.py",
+                "kits/python/main.py",
+                "-v",
+                "2",
+                "-o",
+                "replay.json"
+            ],
+        },
+    ]
+}

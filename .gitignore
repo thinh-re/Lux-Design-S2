@@ -16,8 +16,6 @@ __temp__.mp4
 node_modules
 dist
 
-.vscode
-
 replay.json
 replay.html
 /kits/java/target
