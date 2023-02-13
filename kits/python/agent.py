@@ -3,6 +3,7 @@ from lux.config import EnvConfig
 from lux.utils import direction_to, my_turn_to_place_factory
 import numpy as np
 import sys
+
 class Agent():
     def __init__(self, player: str, env_cfg: EnvConfig) -> None:
         self.player = player
@@ -15,7 +16,7 @@ class Agent():
             # bid 0 to not waste resources bidding and declare as the default faction
             return dict(faction="AlphaStrike", bid=0)
         else:
-            game_state = obs_to_game_state(step, self.env_cfg, obs)
+            game_state: GameState = obs_to_game_state(step, self.env_cfg, obs)
             # factory placement period
 
             # how much water and metal you have in your starting pool to give to new factories
