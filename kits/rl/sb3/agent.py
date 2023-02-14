@@ -1,9 +1,13 @@
 """
-This file is where your agent's logic is kept. Define a bidding policy, factory placement policy, as well as a policy for playing the normal phase of the game
+This file is where your agent's logic is kept. 
+Define a bidding policy, factory placement policy, 
+as well as a policy for playing the normal phase of the game
 
-The tutorial will learn an RL agent to play the normal phase and use heuristics for the other two phases.
+The tutorial will learn an RL agent to play the normal phase 
+and use heuristics for the other two phases.
 
-Note that like the other kits, you can only debug print to standard error e.g. print("message", file=sys.stderr)
+Note that like the other kits, you can only debug print to standard error 
+e.g. print("message", file=sys.stderr)
 """
 
 import os.path as osp
