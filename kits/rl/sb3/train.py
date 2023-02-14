@@ -1,5 +1,7 @@
 """
-Implementation of RL agent. Note that luxai_s2 and stable_baselines3 are packages not available during the competition running (ATM)
+Implementation of RL agent. 
+Note that luxai_s2 and stable_baselines3 are packages 
+not available during the competition running (ATM)
 """
 
 
@@ -12,25 +14,20 @@ import torch as th
 import torch.nn as nn
 from gym import spaces
 from gym.wrappers import TimeLimit
-from luxai_s2.state import ObservationStateDict, StatsStateDict
-from luxai_s2.utils.heuristics.factory_placement import place_near_random_ice
-from luxai_s2.wrappers import SB3Wrapper
-from stable_baselines3.common.callbacks import (
-    BaseCallback,
-    CheckpointCallback,
-    EvalCallback,
-)
+from stable_baselines3.common.callbacks import (BaseCallback,
+                                                CheckpointCallback,
+                                                EvalCallback)
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import set_random_seed
-from stable_baselines3.common.vec_env import (
-    DummyVecEnv,
-    SubprocVecEnv,
-    VecVideoRecorder,
-)
+from stable_baselines3.common.vec_env import (DummyVecEnv, SubprocVecEnv,
+                                              VecVideoRecorder)
 from stable_baselines3.ppo import PPO
-
 from wrappers import SimpleUnitDiscreteController, SimpleUnitObservationWrapper
+
+from luxai_s2.state import ObservationStateDict, StatsStateDict
+from luxai_s2.utils.heuristics.factory_placement import place_near_random_ice
+from luxai_s2.wrappers import SB3Wrapper
 
 
 class CustomEnvWrapper(gym.Wrapper):
