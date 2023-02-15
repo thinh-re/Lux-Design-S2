@@ -1,2 +1,1 @@
-stable-baselines3
-gym[all]
+stable-baselines3[extra]
