@@ -99,7 +99,11 @@ class SimpleUnitDiscreteController(Controller):
 
     def action_to_lux_action(
         self, agent: str, obs: Dict[str, Any], action: npt.NDArray
-    ):
+    ) -> Dict:
+        """
+        Returns:
+            {'factory_0': 0 or 1 or 2}
+        """
         shared_obs = obs["player_0"]
         lux_action = dict()
         units: Dict = shared_obs["units"][agent]

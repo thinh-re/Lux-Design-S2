@@ -7,6 +7,7 @@ not available during the competition running (ATM)
 
 import copy
 import os.path as osp
+from typing import Dict, Tuple
 
 import gym
 import numpy as np
@@ -41,9 +42,28 @@ class CustomEnvWrapper(gym.Wrapper):
         """
         super().__init__(env)
         self.prev_step_metrics = None
-        self.env: gym.Env
+        self.env: SimpleUnitObservationWrapper
 
-    def step(self, action):
+    def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
+        """
+
+        Args:
+            action (int): 
+
+        Returns:
+            Tuple[np.ndarray, float, bool, Dict]: obs, reward, done, info
+            
+            Example:
+            (
+                array([0.66666667, 0.3125    , 1.        , 0.17      , 0.        ,
+                0.        , 0.        , 0.        , 0.        , 0.        ,
+                0.        , 0.02083333, 0.04166667]), # observation
+                0, # no reward
+                False, # game not done
+                {'metrics': {'ice_dug': 0, 'water_produced': 0, 'action_queue_updates_success': 0, 'action_queue_updates_total': 0}} # more info
+            )
+                
+        """
         agent = "player_0"
         opp_agent = "player_1"
 
@@ -56,6 +76,7 @@ class CustomEnvWrapper(gym.Wrapper):
         # submit actions for just one agent to make it single-agent
         # and save single-agent versions of the data below
         action = {agent: action}
+        # this will call SimpleUnitDiscreteController.action_to_lux_action and then LuxAI_S2.step()
         obs, _, done, info = self.env.step(action)
         obs = obs[agent]
         done = done[agent]
