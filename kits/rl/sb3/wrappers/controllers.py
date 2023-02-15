@@ -102,7 +102,7 @@ class SimpleUnitDiscreteController(Controller):
     ):
         shared_obs = obs["player_0"]
         lux_action = dict()
-        units = shared_obs["units"][agent]
+        units: Dict = shared_obs["units"][agent]
         for unit_id in units.keys():
             unit = units[unit_id]
             choice = action
@@ -131,7 +131,7 @@ class SimpleUnitDiscreteController(Controller):
 
             break
 
-        factories = shared_obs["factories"][agent]
+        factories: Dict = shared_obs["factories"][agent]
         if len(units) == 0:
             for unit_id in factories.keys():
                 lux_action[unit_id] = 1  # build a single heavy

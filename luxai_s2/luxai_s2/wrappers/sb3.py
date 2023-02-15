@@ -29,8 +29,9 @@ class SB3Wrapper(gym.Wrapper):
     ) -> None:
         """
         A environment wrapper for Stable Baselines 3. It reduces the LuxAI_S2 env
-        into a single phase game and places the first two phases (bidding and factory placement) into the env.reset function so that
-        interacting agents directly start generating actions to play the third phase of the game.
+        into a single phase game and places the first two phases (bidding and factory placement) 
+        into the env.reset function so that interacting agents directly start generating actions 
+        to play the third phase of the game.
 
         It also accepts a Controller that translates action's in one action space to a Lux S2 compatible action
 
