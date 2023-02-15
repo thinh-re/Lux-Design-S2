@@ -152,7 +152,7 @@ def save_model_state_dict(save_path: str, model: BaseAlgorithm):
     th.save(state_dict, save_path)
 
 
-def evaluate(args: TrainArgumentParser, env_id, model: PPO):
+def evaluate(args: TrainArgumentParser, env_id: str, model: PPO):
     model = model.load(args.model_path)
     video_length = 1000  # default horizon
     eval_env = SubprocVecEnv(

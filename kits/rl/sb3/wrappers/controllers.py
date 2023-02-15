@@ -50,7 +50,7 @@ class SimpleUnitDiscreteController(Controller):
         - transferring power or resources other than ice
 
         To help understand how to this controller works to map one action space to the original lux action space,
-        see how the lux action space is defined in luxai_s2/spaces/action.py
+        see how the lux action space is defined in luxai_s2/spaces/act_space.py
 
         """
         self.env_cfg = env_cfg
