@@ -1,2 +1,3 @@
 stable-baselines3[extra]
 torch
+typed-argument-parser

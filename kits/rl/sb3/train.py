@@ -12,8 +12,10 @@ import gym
 import numpy as np
 import torch as th
 import torch.nn as nn
+from argparser import TrainArgumentParser
 from gym import spaces
 from gym.wrappers import TimeLimit
+from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import (BaseCallback,
                                                 CheckpointCallback,
                                                 EvalCallback)
@@ -33,10 +35,12 @@ from luxai_s2.wrappers import SB3Wrapper
 class CustomEnvWrapper(gym.Wrapper):
     def __init__(self, env: gym.Env) -> None:
         """
-        Adds a custom reward and turns the LuxAI_S2 environment into a single-agent environment for easy training
+        Adds a custom reward and turns the LuxAI_S2 environment 
+        into a single-agent environment for easy training
         """
         super().__init__(env)
         self.prev_step_metrics = None
+        self.env: gym.Env
 
     def step(self, action):
         agent = "player_0"
@@ -92,52 +96,6 @@ class CustomEnvWrapper(gym.Wrapper):
         return obs
 
 
-def parse_args():
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Simple script that simplifies Lux AI Season 2 as a single-agent environment with a reduced observation and action space. It trains a policy that can succesfully control a heavy unit to dig ice and transfer it back to a factory to keep it alive"
-    )
-    parser.add_argument("-s", "--seed", type=int, default=12, help="seed for training")
-    parser.add_argument(
-        "-n",
-        "--n-envs",
-        type=int,
-        default=8,
-        help="Number of parallel envs to run. Note that the rollout size is configured separately and invariant to this value",
-    )
-    parser.add_argument(
-        "--max-episode-steps",
-        type=int,
-        default=200,
-        help="Max steps per episode before truncating them",
-    )
-    parser.add_argument(
-        "--total-timesteps",
-        type=int,
-        default=3_000_000,
-        help="Total timesteps for training",
-    )
-
-    parser.add_argument(
-        "--eval",
-        action="store_true",
-        help="If set, will only evaluate a given policy. Otherwise enters training mode",
-    )
-    parser.add_argument(
-        "--model-path", type=str, help="Path to SB3 model weights to use for evaluation"
-    )
-    parser.add_argument(
-        "-l",
-        "--log-path",
-        type=str,
-        default="logs",
-        help="Logging path",
-    )
-    args = parser.parse_args()
-    return args
-
-
 def make_env(env_id: str, rank: int, seed: int = 0, max_episode_steps=100):
     def _init() -> gym.Env:
         # verbose = 0
@@ -187,13 +145,13 @@ class TensorboardCallback(BaseCallback):
         return True
 
 
-def save_model_state_dict(save_path, model):
+def save_model_state_dict(save_path: str, model: BaseAlgorithm):
     # save the policy state dict for kaggle competition submission
     state_dict = model.policy.to("cpu").state_dict()
     th.save(state_dict, save_path)
 
 
-def evaluate(args, env_id, model):
+def evaluate(args: TrainArgumentParser, env_id, model: PPO):
     model = model.load(args.model_path)
     video_length = 1000  # default horizon
     eval_env = SubprocVecEnv(
@@ -211,7 +169,7 @@ def evaluate(args, env_id, model):
     print(out)
 
 
-def train(args, env_id, model: PPO):
+def train(args: TrainArgumentParser, env_id: str, model: BaseAlgorithm):
     eval_env = SubprocVecEnv(
         [make_env(env_id, i, max_episode_steps=1000) for i in range(4)]
     )
@@ -232,7 +190,7 @@ def train(args, env_id, model: PPO):
     model.save(osp.join(args.log_path, "models/latest_model"))
 
 
-def main(args):
+def main(args: TrainArgumentParser):
     print("Training with args", args)
     if args.seed is not None:
         set_random_seed(args.seed)
@@ -267,4 +225,5 @@ def main(args):
 
 if __name__ == "__main__":
     # python ../examples/sb3.py -l logs/exp_1 -s 42 -n 1
-    main(parse_args())
+    args = TrainArgumentParser().parse_args()
+    main(args)

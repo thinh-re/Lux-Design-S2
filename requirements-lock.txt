@@ -22,12 +22,13 @@ importlib-resources==5.10.2
 jax-jumpy==0.2.0
 kiwisolver==1.4.4
 libtorrent==2.0.7
--e git+ssh://git@github.com/thinh-re/Lux-Design-S2.git@14293b0ff32d68e248c8d4f707e4e494c6ea0088#egg=luxai_s2&subdirectory=luxai_s2
+-e git+ssh://git@github.com/thinh-re/Lux-Design-S2.git@5a595ec6179ae6a9fc01b0fb7b5a129b7444953b#egg=luxai_s2&subdirectory=luxai_s2
 Markdown==3.4.1
 markdown-it-py==2.1.0
 MarkupSafe==2.1.2
 matplotlib==3.7.0
 mdurl==0.1.2
+mypy-extensions==1.0.0
 numpy==1.24.2
 nvidia-cublas-cu11==11.10.3.66
 nvidia-cuda-nvrtc-cu11==11.7.99
@@ -61,6 +62,8 @@ tensorboard-plugin-wit==1.8.1
 termcolor==2.2.0
 torch==1.13.1
 tqdm==4.64.1
+typed-argument-parser==1.7.2
+typing-inspect==0.8.0
 typing_extensions==4.5.0
 urllib3==1.26.14
 vec-noise==1.1.4
