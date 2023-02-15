@@ -6,7 +6,8 @@ import numpy.typing as npt
 from gym import spaces
 
 
-# Controller class copied here since you won't have access to the luxai_s2 package directly on the competition server
+# Controller class copied here since you won't have access to the luxai_s2 
+# package directly on the competition server
 class Controller:
     def __init__(self, action_space: spaces.Space) -> None:
         self.action_space = action_space

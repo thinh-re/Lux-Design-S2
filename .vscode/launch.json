@@ -20,5 +20,16 @@
                 "replay.json"
             ],
         },
+        {
+            "name": "Train",
+            "type": "python",
+            "request": "launch",
+            "program": "kits/rl/sb3/train.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--n_envs", "1"
+            ],
+        },
     ]
 }

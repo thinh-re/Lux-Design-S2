@@ -100,7 +100,8 @@ def make_env(env_id: str, rank: int, seed: int = 0, max_episode_steps=100):
     def _init() -> gym.Env:
         # verbose = 0
         # collect stats so we can create reward functions
-        # max factories set to 2 for simplification and keeping returns consistent as we survive longer if there are more initial resources
+        # max factories set to 2 for simplification and keeping returns consistent 
+        # as we survive longer if there are more initial resources
         env = gym.make(env_id, verbose=0, collect_stats=True, MAX_FACTORIES=2)
 
         # Add a SB3 wrapper to make it work with SB3 and simplify the action space with the controller
