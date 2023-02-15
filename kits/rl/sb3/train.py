@@ -27,6 +27,7 @@ from stable_baselines3.common.vec_env import (DummyVecEnv, SubprocVecEnv,
 from stable_baselines3.ppo import PPO
 from wrappers import SimpleUnitDiscreteController, SimpleUnitObservationWrapper
 
+from luxai_s2.env import LuxAI_S2
 from luxai_s2.state import ObservationStateDict, StatsStateDict
 from luxai_s2.utils.heuristics.factory_placement import place_near_random_ice
 from luxai_s2.wrappers import SB3Wrapper
@@ -96,18 +97,20 @@ class CustomEnvWrapper(gym.Wrapper):
         return obs
 
 
-def make_env(env_id: str, rank: int, seed: int = 0, max_episode_steps=100):
-    def _init() -> gym.Env:
+def make_env(
+    env_id: str, rank: int, 
+    seed: int = 0, max_episode_steps=100,
+) -> LuxAI_S2:
+    def _init() -> LuxAI_S2:
         # verbose = 0
         # collect stats so we can create reward functions
         # max factories set to 2 for simplification and keeping returns consistent 
         # as we survive longer if there are more initial resources
-        env = gym.make(env_id, verbose=0, collect_stats=True, MAX_FACTORIES=2)
+        env: LuxAI_S2 = gym.make(env_id, verbose=0, collect_stats=True, MAX_FACTORIES=2)
 
         # Add a SB3 wrapper to make it work with SB3 and simplify the action space with the controller
         # this will remove the bidding phase and factory placement phase. For factory placement we use
         # the provided place_near_random_ice function which will randomly select an ice tile and place a factory near it.
-
         env = SB3Wrapper(
             env,
             factory_placement_policy=place_near_random_ice,
@@ -146,13 +149,17 @@ class TensorboardCallback(BaseCallback):
         return True
 
 
-def save_model_state_dict(save_path: str, model: BaseAlgorithm):
+def save_model_state_dict(save_path: str, model: BaseAlgorithm) -> None:
     # save the policy state dict for kaggle competition submission
     state_dict = model.policy.to("cpu").state_dict()
     th.save(state_dict, save_path)
 
 
-def evaluate(args: TrainArgumentParser, env_id: str, model: PPO):
+def evaluate(
+    args: TrainArgumentParser, 
+    env_id: str, 
+    model: PPO,
+) -> None:
     model = model.load(args.model_path)
     video_length = 1000  # default horizon
     eval_env = SubprocVecEnv(
@@ -170,7 +177,11 @@ def evaluate(args: TrainArgumentParser, env_id: str, model: PPO):
     print(out)
 
 
-def train(args: TrainArgumentParser, env_id: str, model: BaseAlgorithm):
+def train(
+    args: TrainArgumentParser, 
+    env_id: str, 
+    model: BaseAlgorithm,
+) -> None:
     eval_env = SubprocVecEnv(
         [make_env(env_id, i, max_episode_steps=1000) for i in range(4)]
     )
@@ -196,15 +207,20 @@ def main(args: TrainArgumentParser):
     if args.seed is not None:
         set_random_seed(args.seed)
     env_id = "LuxAI_S2-v0"
-    env = SubprocVecEnv(
-        [
-            make_env(env_id, i, max_episode_steps=args.max_episode_steps)
-            for i in range(args.n_envs)
-        ]
-    )
+    
+    # Creates a multiprocess vectorized wrapper for multiple environments, 
+    # distributing each environment to its own process, 
+    # allowing significant speed up when the environment is computationally complex.
+    env = SubprocVecEnv([
+        make_env(env_id, i, max_episode_steps=args.max_episode_steps)
+        for i in range(args.n_envs)
+    ])
+    
     env.reset()
     rollout_steps = 4000
     policy_kwargs = dict(net_arch=(128, 128))
+    
+    # PPO from SB3
     model = PPO(
         "MlpPolicy",
         env,
@@ -218,6 +234,7 @@ def main(args: TrainArgumentParser):
         gamma=0.99,
         tensorboard_log=osp.join(args.log_path),
     )
+    
     if args.eval:
         evaluate(args, env_id, model)
     else:
