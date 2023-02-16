@@ -4,9 +4,9 @@ import gym
 import numpy as np
 import numpy.typing as npt
 from gym import spaces
+from lux.config import EnvConfig
+from wrappers.observations import Observation
 
-from .observations import Observation
-from ..lux.config import EnvConfig
 
 class SimpleUnitObservationWrapper(gym.ObservationWrapper):
     """

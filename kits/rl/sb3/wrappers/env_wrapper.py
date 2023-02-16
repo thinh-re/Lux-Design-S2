@@ -3,10 +3,9 @@ from typing import Dict, Tuple
 
 import gym
 import numpy as np
+from wrappers.obs_wrappers import SimpleUnitObservationWrapper
 
 from luxai_s2.state import StatsStateDict
-
-from .obs_wrappers import SimpleUnitObservationWrapper
 
 
 class CustomEnvWrapper(gym.Wrapper):

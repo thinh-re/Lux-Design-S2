@@ -26,6 +26,7 @@ from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.vec_env import (DummyVecEnv, SubprocVecEnv,
                                               VecVideoRecorder)
 from stable_baselines3.ppo import PPO
+from train_nn import CustomNet
 from wrappers import (CustomEnvWrapper, SimpleUnitDiscreteController,
                       SimpleUnitObservationWrapper)
 
@@ -38,7 +39,7 @@ from luxai_s2.wrappers import SB3Wrapper
 def make_env(
     env_id: str, rank: int, 
     seed: int = 0, max_episode_steps=100,
-) -> LuxAI_S2:
+):
     def _init() -> LuxAI_S2:
         # verbose = 0
         # collect stats so we can create reward functions
@@ -165,7 +166,7 @@ def train_one_process(
     model: BaseAlgorithm,
 ) -> None:
     '''Same as train but use only one process. For debug only!'''
-    eval_env = make_env(env_id, i, max_episode_steps=1000)()
+    eval_env = make_env(env_id, 0, max_episode_steps=1000)()
     eval_callback = EvalCallback(
         eval_env,
         best_model_save_path=osp.join(args.log_path, "models"),
@@ -199,21 +200,24 @@ def main(args: TrainArgumentParser):
     
     env.reset()
     rollout_steps = 4000
-    policy_kwargs = dict(net_arch=(128, 128))
+    policy_kwargs = dict(
+        features_extractor_class=CustomNet,
+        features_extractor_kwargs=dict(features_dim=128),
+    )
     
     # PPO from SB3
     model = PPO(
-        "MlpPolicy",
+        "CustomNet",
         env,
         n_steps=rollout_steps // args.n_envs,
         batch_size=800,
         learning_rate=3e-4,
-        policy_kwargs=policy_kwargs,
         verbose=1,
         n_epochs=2,
         target_kl=0.05,
         gamma=0.99,
         tensorboard_log=osp.join(args.log_path),
+        policy_kwargs=policy_kwargs,
     )
     
     if args.eval:
@@ -235,21 +239,24 @@ def main_single_process(args: TrainArgumentParser):
     
     env.reset()
     rollout_steps = 4000
-    policy_kwargs = dict(net_arch=(128, 128))
+    policy_kwargs = dict(
+        features_extractor_class=CustomNet,
+        features_extractor_kwargs=dict(features_dim=128),
+    )
     
     # PPO from SB3
     model = PPO(
-        "MlpPolicy",
+        "CustomNet",
         env,
         n_steps=rollout_steps // args.n_envs,
         batch_size=800,
         learning_rate=3e-4,
-        policy_kwargs=policy_kwargs,
         verbose=1,
         n_epochs=2,
         target_kl=0.05,
         gamma=0.99,
         tensorboard_log=osp.join(args.log_path),
+        policy_kwargs=policy_kwargs,
     )
     
     if args.eval:
