@@ -28,8 +28,18 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--n_envs", "1"
+                "--n_envs",
+                "1"
             ],
+        },
+        {
+            "name": "Analyze Replay",
+            "type": "python",
+            "request": "launch",
+            "program": "kits/rl/sb3/dev/analyze_replay_json.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [],
         },
     ]
 }
