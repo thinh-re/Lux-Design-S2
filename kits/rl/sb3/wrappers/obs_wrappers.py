@@ -6,7 +6,7 @@ import numpy.typing as npt
 from gym import spaces
 
 from .observations import Observation
-
+from ..lux.config import EnvConfig
 
 class SimpleUnitObservationWrapper(gym.ObservationWrapper):
     """
@@ -31,7 +31,14 @@ class SimpleUnitObservationWrapper(gym.ObservationWrapper):
 
     # we make this method static so the submission/evaluation code can use this as well
     @staticmethod
-    def convert_obs(obs: Dict[str, Any], env_cfg: Any) -> Dict[str, npt.NDArray]:
+    def convert_obs(obs: Dict[str, Any], env_cfg: EnvConfig) -> Dict[str, npt.NDArray]:
+        '''
+        Returns 
+        {
+            'player_0': array([...]),
+            'player_1': array([...]),
+        }
+        '''
         observation_obj = Observation(obs)
         observation = dict()
         
