@@ -207,7 +207,7 @@ def main(args: TrainArgumentParser):
     
     # PPO from SB3
     model = PPO(
-        "CustomNet",
+        "MlpPolicy",
         env,
         n_steps=rollout_steps // args.n_envs,
         batch_size=800,
@@ -246,17 +246,17 @@ def main_single_process(args: TrainArgumentParser):
     
     # PPO from SB3
     model = PPO(
-        "CustomNet",
+        "MlpPolicy",
         env,
         n_steps=rollout_steps // args.n_envs,
         batch_size=800,
         learning_rate=3e-4,
+        policy_kwargs=policy_kwargs,
         verbose=1,
         n_epochs=2,
         target_kl=0.05,
         gamma=0.99,
         tensorboard_log=osp.join(args.log_path),
-        policy_kwargs=policy_kwargs,
     )
     
     if args.eval:
