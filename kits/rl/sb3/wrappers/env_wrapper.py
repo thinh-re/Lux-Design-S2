@@ -41,6 +41,7 @@ class CustomEnvWrapper(gym.Wrapper):
         agent = "player_0"
         opp_agent = "player_1"
 
+        # TODO: if passing opponent agent, ignore these code
         opp_factories = self.env.state.factories[opp_agent]
         for k in opp_factories.keys():
             factory = opp_factories[k]

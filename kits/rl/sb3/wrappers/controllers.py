@@ -140,6 +140,8 @@ class SimpleUnitDiscreteController(Controller):
             for unit_id in factories.keys():
                 lux_action[unit_id] = 1  # build a single heavy
 
+        # TODO: get opponent's action from here and add to lux_action
+
         return lux_action
 
     def action_masks(self, agent: str, obs: Dict[str, Any]):
