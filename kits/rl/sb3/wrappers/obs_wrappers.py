@@ -5,6 +5,8 @@ import numpy as np
 import numpy.typing as npt
 from gym import spaces
 
+from .observations import Observation
+
 
 class SimpleUnitObservationWrapper(gym.ObservationWrapper):
     """
@@ -30,7 +32,9 @@ class SimpleUnitObservationWrapper(gym.ObservationWrapper):
     # we make this method static so the submission/evaluation code can use this as well
     @staticmethod
     def convert_obs(obs: Dict[str, Any], env_cfg: Any) -> Dict[str, npt.NDArray]:
+        observation_obj = Observation(obs)
         observation = dict()
+        
         shared_obs = obs["player_0"]
         ice_map = shared_obs["board"]["ice"]
         ice_tile_locations = np.argwhere(ice_map == 1)

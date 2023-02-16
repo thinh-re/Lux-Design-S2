@@ -12,7 +12,7 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "kits/python/main.py",
+                "kits/rl/sb3/train.py",
                 "kits/python/main.py",
                 "-v",
                 "2",

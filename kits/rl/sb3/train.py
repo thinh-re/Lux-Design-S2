@@ -114,6 +114,26 @@ def evaluate(
     out = evaluate_policy(model, eval_env, render=False, deterministic=False)
     print(out)
 
+def evaluate_one_process(
+    args: TrainArgumentParser, 
+    env_id: str, 
+    model: PPO,
+) -> None:
+    '''Same as evaluate but use only one process. For debug only!'''
+    model = model.load(args.model_path)
+    video_length = 1000  # default horizon
+    eval_env = make_env(env_id, i, max_episode_steps=1000)()
+    eval_env = VecVideoRecorder(
+        eval_env,
+        osp.join(args.log_path, "eval_videos"),
+        record_video_trigger=lambda x: x == 0,
+        video_length=video_length,
+        name_prefix=f"evaluation_video",
+    )
+    eval_env.reset()
+    out = evaluate_policy(model, eval_env, render=False, deterministic=False)
+    print(out)
+
 
 def train(
     args: TrainArgumentParser, 
@@ -123,6 +143,29 @@ def train(
     eval_env = SubprocVecEnv(
         [make_env(env_id, i, max_episode_steps=1000) for i in range(4)]
     )
+    eval_callback = EvalCallback(
+        eval_env,
+        best_model_save_path=osp.join(args.log_path, "models"),
+        log_path=osp.join(args.log_path, "eval_logs"),
+        eval_freq=24_000,
+        deterministic=False,
+        render=False,
+        n_eval_episodes=5,
+    )
+
+    model.learn(
+        args.total_timesteps,
+        callback=[TensorboardCallback(tag="train_metrics"), eval_callback],
+    )
+    model.save(osp.join(args.log_path, "models/latest_model"))
+
+def train_one_process(
+    args: TrainArgumentParser, 
+    env_id: str, 
+    model: BaseAlgorithm,
+) -> None:
+    '''Same as train but use only one process. For debug only!'''
+    eval_env = make_env(env_id, i, max_episode_steps=1000)()
     eval_callback = EvalCallback(
         eval_env,
         best_model_save_path=osp.join(args.log_path, "models"),
@@ -177,9 +220,49 @@ def main(args: TrainArgumentParser):
         evaluate(args, env_id, model)
     else:
         train(args, env_id, model)
+        
+def main_single_process(args: TrainArgumentParser):
+    '''Same as main but use only one process. For debug only!'''
+    print("Training with args", args)
+    if args.seed is not None:
+        set_random_seed(args.seed)
+    env_id = "LuxAI_S2-v0"
+    
+    # Creates a multiprocess vectorized wrapper for multiple environments, 
+    # distributing each environment to its own process, 
+    # allowing significant speed up when the environment is computationally complex.
+    env = make_env(env_id, 0, max_episode_steps=args.max_episode_steps)()
+    
+    env.reset()
+    rollout_steps = 4000
+    policy_kwargs = dict(net_arch=(128, 128))
+    
+    # PPO from SB3
+    model = PPO(
+        "MlpPolicy",
+        env,
+        n_steps=rollout_steps // args.n_envs,
+        batch_size=800,
+        learning_rate=3e-4,
+        policy_kwargs=policy_kwargs,
+        verbose=1,
+        n_epochs=2,
+        target_kl=0.05,
+        gamma=0.99,
+        tensorboard_log=osp.join(args.log_path),
+    )
+    
+    if args.eval:
+        evaluate_one_process(args, env_id, model)
+    else:
+        train_one_process(args, env_id, model)
 
 
 if __name__ == "__main__":
     # python ../examples/sb3.py -l logs/exp_1 -s 42 -n 1
     args = TrainArgumentParser().parse_args()
-    main(args)
+    
+    if args.n_envs == 1:
+        main_single_process(args)
+    else:
+        main(args)

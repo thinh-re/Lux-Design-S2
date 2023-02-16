@@ -13,5 +13,5 @@ cd ..
 Or run
 
 ```bash
-python luxai_s2/luxai_runner/cli.py kits/python/main.py kits/python/main.py -v 2 -o replay.json
+python luxai_s2/luxai_runner/cli.py kits/rl/sb3/main.py kits/python/main.py -v 2 -o replay.json
 ```
