@@ -1,10 +1,12 @@
 from typing import Dict
+
+import numpy as np
 import torch as th
 import torch.nn as nn
 from gym import spaces
-
-from stable_baselines3 import PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+from wrappers.observations import Board
+
 
 # Note: Copy to nn.py before submit!
 # TODO: Create share sub-module that includes custom network
@@ -19,19 +21,46 @@ class CustomNet(BaseFeaturesExtractor):
     def __init__(self, observation_space: spaces.Box, features_dim: int = 12):
         super().__init__(observation_space, features_dim)
         self.action_dims = features_dim
+        
+        # The same as `SimpleUnitObservationWrapper.observation_space`
+        self.observation_space_shape: int = observation_space.shape[0]
+        
+        # Board
+        self.c, self.h, self.w = Board.numpy_shape # (6, 48, 48)
+        self.board_region: int = self.c * self.h * self.w
+        self.cnn = nn.Sequential(
+            nn.Conv2d(self.c, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            nn.Flatten(),
+        )
+
+        # Compute shape by doing one forward pass
+        with th.no_grad():
+            n_flatten = self.cnn(
+                # th.as_tensor(observation_space.sample()[None]).float()
+                th.randn((1, self.c, self.h, self.w))
+            ).shape[1]
+        
+        self.n_others = self.observation_space_shape - self.board_region
         self.mlp = nn.Sequential(
-            nn.Linear(observation_space.shape[0], 128),
+            nn.Linear(self.n_others, 128),
             nn.Tanh(),
             nn.Linear(128, 128),
             nn.Tanh(),
         )
-        self.action_net = nn.Sequential(
-            nn.Linear(128, self.action_dims),
-        )
+        
+        # self.linear = nn.Sequential(
+        #     nn.Linear(n_flatten, features_dim), 
+        #     nn.ReLU(),
+        # )
 
     def forward(self, x: th.Tensor) -> th.Tensor:
-        x = self.mlp(x)
-        return x
+        board = x[:, :self.board_region].reshape((-1, self.c, self.h, self.w))
+        others = x[:, self.board_region:]
+        rs = self.mlp(others)
+        return rs
 
 # TODO:
 # ref: https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html
