@@ -7,6 +7,8 @@ from gym import spaces
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from wrappers.observations import Board
 
+def count_parameters(model: nn.Module):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 # Note: Copy to nn.py before submit!
 # TODO: Create share sub-module that includes custom network
@@ -42,6 +44,11 @@ class CustomNet(BaseFeaturesExtractor):
                 # th.as_tensor(observation_space.sample()[None]).float()
                 th.randn((1, self.c, self.h, self.w))
             ).shape[1]
+            
+        self.linear = nn.Sequential(
+            nn.Linear(n_flatten, features_dim), 
+            nn.ReLU(),
+        )
         
         self.n_others = self.observation_space_shape - self.board_region
         self.mlp = nn.Sequential(
@@ -49,17 +56,26 @@ class CustomNet(BaseFeaturesExtractor):
             nn.Tanh(),
             nn.Linear(128, 128),
             nn.Tanh(),
+            nn.Linear(128, features_dim),
+            nn.Tanh(),
         )
         
-        # self.linear = nn.Sequential(
-        #     nn.Linear(n_flatten, features_dim), 
-        #     nn.ReLU(),
-        # )
+        self.final = nn.Sequential(
+            nn.Linear(features_dim*2, features_dim),
+            nn.Tanh(),
+        )
+        print('No. parameters:', count_parameters(self))
+    
 
     def forward(self, x: th.Tensor) -> th.Tensor:
         board = x[:, :self.board_region].reshape((-1, self.c, self.h, self.w))
+        board = self.linear(self.cnn(board))
+
         others = x[:, self.board_region:]
-        rs = self.mlp(others)
+        others = self.mlp(others)
+        
+        rs = th.cat([board, others], axis=1)
+        rs = self.final(rs)
         return rs
 
 # TODO:
