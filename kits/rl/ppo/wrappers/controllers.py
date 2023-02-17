@@ -1,9 +1,9 @@
-import sys
 from typing import Any, Dict
 
 import numpy as np
 import numpy.typing as npt
 from gym import spaces
+from lux.config import EnvConfig
 
 
 # Controller class copied here since you won't have access to the luxai_s2 
@@ -29,7 +29,7 @@ class Controller:
 
 
 class SimpleUnitDiscreteController(Controller):
-    def __init__(self, env_cfg) -> None:
+    def __init__(self, env_cfg: EnvConfig) -> None:
         """
         A simple controller that controls only the robot that will get spawned.
         Moreover, it will always try to spawn one heavy robot if there are none regardless of action given

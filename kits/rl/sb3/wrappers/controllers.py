@@ -1,9 +1,10 @@
-import sys
 from typing import Any, Dict
 
 import numpy as np
 import numpy.typing as npt
 from gym import spaces
+from lux.config import EnvConfig
+from wrappers.observations import Observation, Unit
 
 
 # Controller class copied here since you won't have access to the luxai_s2 
@@ -29,7 +30,7 @@ class Controller:
 
 
 class SimpleUnitDiscreteController(Controller):
-    def __init__(self, env_cfg) -> None:
+    def __init__(self, env_cfg: EnvConfig) -> None:
         """
         A simple controller that controls only the robot that will get spawned.
         Moreover, it will always try to spawn one heavy robot if there are none regardless of action given
@@ -67,7 +68,12 @@ class SimpleUnitDiscreteController(Controller):
         self.no_op_dim_high = self.dig_dim_high + self.no_op_dims
 
         self.total_act_dims = self.no_op_dim_high
-        action_space = spaces.Discrete(self.total_act_dims)
+        
+        self.max_factories = 2
+        self.max_units = 2
+        action_space = spaces.MultiDiscrete(
+            [3]* self.max_factories + [self.total_act_dims] * self.max_units
+        )
         super().__init__(action_space)
 
     def _is_move_action(self, id):
@@ -104,45 +110,42 @@ class SimpleUnitDiscreteController(Controller):
         Returns:
             {'factory_0': 0 or 1 or 2}
         """
-        shared_obs = obs["player_0"]
+        observation_obj = Observation(obs)
+        shared_obs = observation_obj.player_0
         lux_action = dict()
-        units: Dict = shared_obs["units"][agent]
-        for unit_id in units.keys():
-            unit = units[unit_id]
-            choice = action
-            action_queue = []
-            no_op = False
-            if self._is_move_action(choice):
-                action_queue = [self._get_move_action(choice)]
-            elif self._is_transfer_action(choice):
-                action_queue = [self._get_transfer_action(choice)]
-            elif self._is_pickup_action(choice):
-                action_queue = [self._get_pickup_action(choice)]
-            elif self._is_dig_action(choice):
-                action_queue = [self._get_dig_action(choice)]
-            else:
-                # action is a no_op, so we don't update the action queue
-                no_op = True
-
-            # simple trick to help agents conserve power is to avoid updating the action queue
-            # if the agent was previously trying to do that particular action already
-            if len(unit["action_queue"]) > 0 and len(action_queue) > 0:
-                same_actions = (unit["action_queue"][0] == action_queue[0]).all()
-                if same_actions:
-                    no_op = True
-            if not no_op:
-                lux_action[unit_id] = action_queue
-
-            break
-
-        factories: Dict = shared_obs["factories"][agent]
-        if len(units) == 0:
-            for unit_id in factories.keys():
-                lux_action[unit_id] = 1  # build a single heavy
-
-        # TODO: get opponent's action from here and add to lux_action
+        units = shared_obs.units.get_units_of_agent(agent)
+        for i, unit in enumerate(units[:self.max_units], start=self.max_factories):
+            self.__unit_action(unit, action[i], lux_action)
+            
+        factories = shared_obs.factories.get_factories_of_agent(agent)
+        for i, factory in enumerate(factories[:self.max_factories], start=0):
+            lux_action[factory.unit_id] = action[i]
 
         return lux_action
+    
+    def __unit_action(self, unit: Unit, action: int, lux_action: Dict[str, Any]) -> None:
+        action_queue = []
+        no_op = False
+        if self._is_move_action(action):
+            action_queue = [self._get_move_action(action)]
+        elif self._is_transfer_action(action):
+            action_queue = [self._get_transfer_action(action)]
+        elif self._is_pickup_action(action):
+            action_queue = [self._get_pickup_action(action)]
+        elif self._is_dig_action(action):
+            action_queue = [self._get_dig_action(action)]
+        else:
+            # action is a no_op, so we don't update the action queue
+            no_op = True
+
+        # simple trick to help agents conserve power is to avoid updating the action queue
+        # if the agent was previously trying to do that particular action already
+        if len(unit.action_queue) > 0 and len(action_queue) > 0:
+            same_actions = (unit.action_queue[0] == action_queue[0]).all()
+            if same_actions:
+                no_op = True
+        if not no_op:
+            lux_action[unit.unit_id] = action_queue
 
     def action_masks(self, agent: str, obs: Dict[str, Any]):
         """

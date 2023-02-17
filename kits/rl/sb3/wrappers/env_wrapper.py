@@ -18,11 +18,11 @@ class CustomEnvWrapper(gym.Wrapper):
         self.prev_step_metrics = None
         self.env: SimpleUnitObservationWrapper
 
-    def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
+    def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, Dict]:
         """
 
         Args:
-            action (int): 
+            action (np.ndarray): see SimpleUnitDiscreteController.action_space 
 
         Returns:
             Tuple[np.ndarray, float, bool, Dict]: obs, reward, done, info

@@ -105,6 +105,12 @@ class Factories:
             raw_factories_obs['player_1']
         )
             
+    def get_factories_of_agent(self, agent: str) -> List[Factory]:
+        if agent == 'player_0':
+            return self.player_0_factories
+        else:
+            return self.player_1_factories
+            
     def __convert_factoriesdict_to_factorieslist(self, factories_dict: Dict[str, Dict]) -> List[Factory]:
         lst: List[Factory] = []
         for factory in factories_dict.values():
@@ -184,6 +190,12 @@ class Units:
         self.player_1 = self.__convert_unitsdict_to_unitslist(
             raw_units_obs['player_1']
         )
+    
+    def get_units_of_agent(self, agent: str) -> List[Unit]:
+        if agent == 'player_0':
+            return self.player_0
+        else:
+            return self.player_1
     
     def __convert_unitsdict_to_unitslist(self, units_dict: Dict[str, Dict]) -> List[Unit]:
         lst: List[Unit] = []

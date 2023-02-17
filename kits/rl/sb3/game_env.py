@@ -4,10 +4,10 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import set_random_seed
 from wrappers import (CustomEnvWrapper, SimpleUnitDiscreteController,
                       SimpleUnitObservationWrapper)
+from wrappers.sb3_wrapper import SB3Wrapper
 
 from luxai_s2.env import LuxAI_S2
 from luxai_s2.utils.heuristics.factory_placement import place_near_random_ice
-from luxai_s2.wrappers import SB3Wrapper
 
 
 def make_env(
