@@ -33,6 +33,15 @@
             ],
         },
         {
+            "name": "Train PPO",
+            "type": "python",
+            "request": "launch",
+            "program": "kits/rl/ppo/train.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [],
+        },
+        {
             "name": "Analyze Replay",
             "type": "python",
             "request": "launch",
