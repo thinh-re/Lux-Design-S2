@@ -9,7 +9,6 @@ from typing import Dict
 import torch as th
 from gym import spaces
 from torch import Tensor, nn
-from utils import count_parameters
 from wrappers.obs_wrappers import ObservationWrapper
 from wrappers.observations import Board
 from wrappers.controllers_wrapper import ControllerWrapper

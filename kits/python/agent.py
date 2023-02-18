@@ -1,8 +1,8 @@
-from lux.kit import obs_to_game_state, GameState
-from lux.config import EnvConfig
-from lux.utils import direction_to, my_turn_to_place_factory
 import numpy as np
-import sys
+from lux.config import EnvConfig
+from lux.kit import GameState, obs_to_game_state
+from lux.utils import direction_to, my_turn_to_place_factory
+
 
 class Agent():
     def __init__(self, player: str, env_cfg: EnvConfig) -> None:

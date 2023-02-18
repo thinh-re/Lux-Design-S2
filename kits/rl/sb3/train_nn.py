@@ -1,6 +1,5 @@
-from typing import Dict
+import sys
 
-import numpy as np
 import torch as th
 import torch.nn as nn
 from gym import spaces
@@ -64,7 +63,7 @@ class CustomNet(BaseFeaturesExtractor):
             nn.Linear(features_dim*2, features_dim),
             nn.Tanh(),
         )
-        print('No. parameters:', count_parameters(self))
+        print('No. parameters:', count_parameters(self), file=sys.stderr)
     
 
     def forward(self, x: th.Tensor) -> th.Tensor:

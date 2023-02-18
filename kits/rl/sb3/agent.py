@@ -17,6 +17,8 @@ import torch as th
 from game_env import make_env
 from lux.config import EnvConfig
 from nn import load_policy
+from stable_baselines3.ppo import PPO
+from train_nn import CustomNet
 from wrappers import ControllerWrapper, ObservationWrapper
 
 # change this to use weights stored elsewhere
@@ -39,13 +41,40 @@ class Agent:
         self.controller = ControllerWrapper(self.env_cfg)
 
         directory = osp.dirname(__file__)
+        model_path = osp.join(directory, MODEL_WEIGHTS_RELATIVE_PATH)
+        self.init_sb3_model(model_path)
         # load our RL policy
-        self.policy = load_policy(
-            osp.join(directory, MODEL_WEIGHTS_RELATIVE_PATH),
-            observation_wrapper=observation_wrapper,
-            controller_wrapper=self.controller,
+        # self.policy = load_policy(
+        #     model_path,
+        #     observation_wrapper=observation_wrapper,
+        #     controller_wrapper=self.controller,
+        # )
+        # self.policy.eval()
+        
+    def init_sb3_model(self, model_path: str) -> None:
+        env_id = "LuxAI_S2-v0"
+        env, controller_wrapper, observation_wrapper = make_env(
+            env_id, 0, max_episode_steps=100,
+            returns_controller_observation=True
+        )()
+        
+        env.reset()
+        policy_kwargs = dict(
+            features_extractor_class=CustomNet,
+            features_extractor_kwargs=dict(
+                # observation_space=observation_wrapper.observation_space, # do not need to specify observation_space since PPO automatically adds observation_space into CustomNet
+                action_space=controller_wrapper.action_space,
+                features_dim=128,    
+            ),
         )
-        self.policy.eval()
+        
+        self.model = PPO(
+            "MlpPolicy",
+            env,
+            policy_kwargs=policy_kwargs,
+            verbose=0,
+        )
+        self.model.load(model_path)
 
     def bid_policy(self, step: int, obs, remainingOverageTime: int = 60):
         return dict(faction="AlphaStrike", bid=0)
@@ -94,28 +123,30 @@ class Agent:
         obs = obs[self.player]
 
         obs = th.from_numpy(obs).float()
-        with th.no_grad():
-            # NOTE: we set deterministic to False here, which is only recommended for RL agents
-            # that create too many invalid actions (less of an issue if you train with invalid action masking)
+        # with th.no_grad():
+        #     # NOTE: we set deterministic to False here, which is only recommended for RL agents
+        #     # that create too many invalid actions (less of an issue if you train with invalid action masking)
 
-            # to improve performance, we have a rule based action mask generator for the controller used
-            # which will force the agent to generate actions that are valid only.
-            action_mask = (
-                th.from_numpy(self.controller.action_masks(self.player, raw_obs))
-                .unsqueeze(0)  # we unsqueeze/add an extra batch dimension =
-                .bool()
-            )
-            actions = (
-                self.policy.act(
-                    obs.unsqueeze(0), deterministic=False, action_masks=action_mask
-                )
-                .cpu()
-                .numpy()
-            )
+        #     # to improve performance, we have a rule based action mask generator for the controller used
+        #     # which will force the agent to generate actions that are valid only.
+        #     action_mask = (
+        #         th.from_numpy(self.controller.action_masks(self.player, raw_obs))
+        #         .unsqueeze(0)  # we unsqueeze/add an extra batch dimension =
+        #         .bool()
+        #     )
+        #     actions = (
+        #         self.policy.act(
+        #             obs.unsqueeze(0), deterministic=False, action_masks=action_mask
+        #         )
+        #         .cpu()
+        #         .numpy()
+        #     )
 
+        action, _states = self.model.predict(obs, deterministic=True)
+        
         # use our controller which we trained with in train.py to generate a Lux S2 compatible action
         lux_action = self.controller.action_to_lux_action(
-            self.player, raw_obs, actions[0]
+            self.player, raw_obs, action
         )
 
         # commented code below adds watering lichen which can easily improve your agent

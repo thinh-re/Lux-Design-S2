@@ -150,7 +150,7 @@ class Unit:
             self.unit_type: str = "NONE" # HEAVY, LIGHT
         else:
             # [array([0, 4, 0, 0, 0, 1]), ...]
-            self.action_queue: List[np.ndarray] = raw_unit_obs['action_queue']
+            self.action_queue: List[np.ndarray] = list(raw_unit_obs['action_queue'])
             
             self.cargo = Cargo(raw_unit_obs['cargo'])
             self.pos: np.ndarray = raw_unit_obs['pos'] # array([30, 11])
