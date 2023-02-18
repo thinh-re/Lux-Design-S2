@@ -31,53 +31,63 @@ class CustomNet(BaseFeaturesExtractor):
         # Board
         self.c, self.h, self.w = Board.numpy_shape # (6, 48, 48)
         self.board_region: int = self.c * self.h * self.w
-        self.cnn = nn.Sequential(
-            nn.BatchNorm2d(self.c),
-            nn.Conv2d(self.c, 32, kernel_size=8, stride=4, padding=0),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
-            nn.ReLU(),
-            nn.Flatten(),
-        )
+        # self.cnn = nn.Sequential(
+        #     nn.BatchNorm2d(self.c),
+        #     nn.Conv2d(self.c, 32, kernel_size=8, stride=4, padding=0),
+        #     nn.ReLU(),
+        #     nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+        #     nn.ReLU(),
+        #     nn.Flatten(),
+        # )
 
         # Compute shape by doing one forward pass
-        with th.no_grad():
-            n_flatten = self.cnn(
-                # th.as_tensor(observation_space.sample()[None]).float()
-                th.randn((1, self.c, self.h, self.w))
-            ).shape[1]
+        # with th.no_grad():
+        #     n_flatten = self.cnn(
+        #         # th.as_tensor(observation_space.sample()[None]).float()
+        #         th.randn((1, self.c, self.h, self.w))
+        #     ).shape[1]
             
-        self.linear = nn.Sequential(
-            nn.Linear(n_flatten, features_dim), 
-            nn.ReLU(),
-        )
+        # self.linear = nn.Sequential(
+        #     nn.Linear(n_flatten, features_dim), 
+        #     nn.ReLU(),
+        # )
         
-        self.n_others = self.observation_space_shape - self.board_region
+        # self.n_others = self.observation_space_shape - self.board_region
+        # self.mlp = nn.Sequential(
+        #     nn.BatchNorm1d(self.n_others),
+        #     nn.Linear(self.n_others, features_dim),
+        #     nn.Tanh(),
+        #     nn.Linear(features_dim, features_dim),
+        #     nn.Tanh(),
+        # )
+        
+        # self.final = nn.Sequential(
+        #     nn.Linear(features_dim*2, features_dim),
+        #     nn.Tanh(),
+        # )
+        
         self.mlp = nn.Sequential(
-            nn.BatchNorm1d(self.n_others),
-            nn.Linear(self.n_others, features_dim),
+            nn.Linear(self.observation_space_shape, features_dim),
             nn.Tanh(),
             nn.Linear(features_dim, features_dim),
-            nn.Tanh(),
-        )
-        
-        self.final = nn.Sequential(
-            nn.Linear(features_dim*2, features_dim),
             nn.Tanh(),
         )
         print('No. parameters:', count_parameters(self), file=sys.stderr)
     
 
-    def forward(self, x: th.Tensor) -> th.Tensor:
-        board = x[:, :self.board_region].reshape((-1, self.c, self.h, self.w))
-        board = self.linear(self.cnn(board))
+    # def forward(self, x: th.Tensor) -> th.Tensor:
+    #     board = x[:, :self.board_region].reshape((-1, self.c, self.h, self.w))
+    #     board = self.linear(self.cnn(board))
 
-        others = x[:, self.board_region:]
-        others = self.mlp(others)
+    #     others = x[:, self.board_region:]
+    #     others = self.mlp(others)
         
-        rs = th.cat([board, others], axis=1)
-        rs = self.final(rs)
-        return rs
+    #     rs = th.cat([board, others], axis=1)
+    #     rs = self.final(rs)
+    #     return rs
+
+    def forward(self, x: th.Tensor) -> th.Tensor:
+        return self.mlp(x)
 
 # TODO:
 # ref: https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html

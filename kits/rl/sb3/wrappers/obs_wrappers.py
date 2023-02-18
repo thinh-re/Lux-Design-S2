@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import gym
 import numpy as np
@@ -25,8 +25,8 @@ class ObservationWrapper(gym.ObservationWrapper):
 
     def __init__(self, env: gym.Env) -> None:
         super().__init__(env)
-        self.observation_size = np.product(Board.numpy_shape) \
-            + OurEnvConfig.MAX_FACTORIES_IN_OBSERVATION * Factory.numpy_shape * 2 \
+        # np.product(Board.numpy_shape)
+        self.observation_size = OurEnvConfig.MAX_FACTORIES_IN_OBSERVATION * Factory.numpy_shape * 2 \
             + OurEnvConfig.MAX_UNITS_IN_OBSERVATION * Unit.numpy_shape(OurEnvConfig.MAX_ACTIONS_PER_UNIT_IN_OBSERVATION) * 2
         self.observation_space = spaces.Box(
             -9999, 9999, shape=(self.observation_size,)
@@ -50,17 +50,27 @@ class ObservationWrapper(gym.ObservationWrapper):
         
         # since both players observe the same game state
         observation_player = observation_obj.player_0
+        
+        ice_map = observation_player.board.ice
+        ice_tile_locations = np.argwhere(ice_map == 1)
+        
+        ore_map = observation_player.board.ore
+        ore_tile_locations = np.argwhere(ore_map == 1)
+        
         for agent in obs.keys():
-            board = observation_player.board.numpy()
+            # board = observation_player.board.numpy()
             factories = observation_player.factories.numpy(
                 agent, max_factories=OurEnvConfig.MAX_FACTORIES_IN_OBSERVATION
             )
             units = observation_player.units.numpy(
                 agent, max_units=OurEnvConfig.MAX_UNITS_IN_OBSERVATION,
                 max_actions=OurEnvConfig.MAX_ACTIONS_PER_UNIT_IN_OBSERVATION,
+                ice_map=ice_tile_locations, ore_map=ore_tile_locations,
+                env_config=env_cfg,
             )
             mapped_observation[agent] = np.concatenate([
-                board.reshape(-1), factories.reshape(-1), units.reshape(-1)
+                # board.reshape(-1), 
+                factories.reshape(-1),
+                units.reshape(-1)
             ], axis=0)
-
         return mapped_observation

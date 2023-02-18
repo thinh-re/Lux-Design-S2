@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
+from lux.config import EnvConfig
 
 '''Convert observation dict to observation object
 for the sake of debugging
@@ -72,7 +73,7 @@ class Cargo:
 
 class Factory:
     # cargo shape + pos (2) + power (1) + strain_id (1)
-    numpy_shape = Cargo.numpy_shape + 4 
+    numpy_shape = Cargo.numpy_shape + 3
     
     def __init__(self, raw_factory_obs: Optional[Dict[str, Any]] = None) -> None:
         if raw_factory_obs is None:
@@ -92,11 +93,11 @@ class Factory:
 
     def numpy(self) -> np.ndarray:
         return np.concatenate([
-            self.cargo.numpy(),
-            self.pos,
+            self.cargo.numpy() / 9999,
+            self.pos / EnvConfig.map_size,
             np.array([
-                self.power,
-                self.strain_id,
+                self.power / 9999,
+                # self.strain_id,
                 # self.team_id,
             ])
         ], axis=0)
@@ -109,7 +110,7 @@ class Factories:
         self.player_1_factories: List[Factory] = self.__convert_factoriesdict_to_factorieslist(
             raw_factories_obs['player_1']
         )
-            
+        
     def get_factories_of_agent(self, agent: str) -> List[Factory]:
         if agent == 'player_0':
             return self.player_0_factories
@@ -152,7 +153,7 @@ class Unit:
             self.power: int = 0
             self.team_id: int = -1
             self.unit_id: str = -1
-            self.unit_type: str = "NONE" # HEAVY, LIGHT
+            self.unit_type: str = "LIGHT" # HEAVY, LIGHT
         else:
             # [array([0, 4, 0, 0, 0, 1]), ...]
             self.action_queue: List[np.ndarray] = list(raw_unit_obs['action_queue'])
@@ -165,7 +166,7 @@ class Unit:
             self.unit_type: str = raw_unit_obs['unit_type'] # HEAVY, LIGHT
             
     def numpy_shape(max_actions: int) -> int:
-        return Cargo.numpy_shape + 2 + 6 * max_actions + 2
+        return Cargo.numpy_shape + 2 + 2 + 4 # + 6 * max_actions
         
     def actions_numpy(self, max_actions: int = 2):
         n = len(self.action_queue)
@@ -175,19 +176,36 @@ class Unit:
             action_queue += [np.array([0,0,0,0,0,0])] * (max_actions - n)
         
         return np.concatenate(action_queue[:max_actions], axis=0)
+    
+    def closest_tile(self, map: np.ndarray) -> np.ndarray:
+        """Calculate the closest tile
+
+        Args:
+            map (np.ndarray): map 48 x 48 boolean
+
+        Returns:
+            np.ndarray: position of closest tile for ex: normalized [-0.2, 0.03]
+        """
+        distance = np.mean((map - self.pos) ** 2, axis=1)
+        # normalize the ice tile location
+        return (map[np.argmin(distance)] - self.pos) / EnvConfig.map_size
         
-    def numpy(self, max_actions: int) -> np.ndarray:
+    def numpy(self, max_actions: int, ice_map: np.ndarray, ore_map: np.ndarray, env_config: EnvConfig) -> np.ndarray:
+        cargo_space = env_config.ROBOTS[self.unit_type].CARGO_SPACE
+        battery_cap = env_config.ROBOTS[self.unit_type].BATTERY_CAPACITY
         return np.concatenate([
-            self.cargo.numpy(),
-            self.pos,
+            self.cargo.numpy() / cargo_space,
+            self.pos / env_config.map_size,
             np.array([
-                self.power,
+                self.power / battery_cap,
                 # self.unit_id,
                 1 if self.unit_type == "HEAVY" \
                     else -1 if self.unit_type == "LIGHT" \
                         else 0,
             ]),
-            self.actions_numpy(max_actions),
+            self.closest_tile(ice_map),
+            self.closest_tile(ore_map),
+            # self.actions_numpy(max_actions),
         ])
 
 class Units:
@@ -211,24 +229,40 @@ class Units:
             lst.append(Unit(unit))
         return lst
     
-    def numpy(self, agent: str, max_units: int, max_actions: int) -> np.ndarray:
+    def numpy(
+        self, 
+        agent: str, 
+        max_units: int, 
+        max_actions: int,
+        ice_map: np.ndarray, 
+        ore_map: np.ndarray,
+        env_config: EnvConfig,
+    ) -> np.ndarray:
         # The order depends on which agent
         if agent == 'player_0':
             return np.stack([
-                self.units_numpy(self.player_0, max_units, max_actions),
-                self.units_numpy(self.player_1, max_units, max_actions),
+                self.units_numpy(self.player_0, max_units, max_actions, ice_map, ore_map, env_config),
+                self.units_numpy(self.player_1, max_units, max_actions, ice_map, ore_map, env_config),
             ])
         else:
             return np.stack([
-                self.units_numpy(self.player_1, max_units, max_actions),
-                self.units_numpy(self.player_0, max_units, max_actions),
+                self.units_numpy(self.player_1, max_units, max_actions, ice_map, ore_map, env_config),
+                self.units_numpy(self.player_0, max_units, max_actions, ice_map, ore_map, env_config),
             ])
         
-    def units_numpy(self, units: List[Unit], max_units: int, max_actions: int) -> np.ndarray:
+    def units_numpy(
+        self, 
+        units: List[Unit], 
+        max_units: int, 
+        max_actions: int,
+        ice_map: np.ndarray, 
+        ore_map: np.ndarray,
+        env_config: EnvConfig,
+    ) -> np.ndarray:
         assert max_units >= 1, "Max number of units must be at least 1"
         if len(units) < max_units:
             units += [Unit()] * (max_units - len(units))
-        return np.stack([unit.numpy(max_actions) for unit in units[:max_units]], axis=0)
+        return np.stack([unit.numpy(max_actions, ice_map, ore_map, env_config) for unit in units[:max_units]], axis=0)
 
 class Player:
     def __init__(self, raw_player_obs: Dict[str, Any]) -> None:
