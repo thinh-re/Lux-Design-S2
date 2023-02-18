@@ -10,7 +10,6 @@ from wrappers.sb3_wrapper import SB3Wrapper
 from luxai_s2.env import LuxAI_S2
 from luxai_s2.utils.heuristics.factory_placement import place_near_random_ice
 
-
 def make_env(
     env_id: str, 
     rank: int, 

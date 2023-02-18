@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 import numpy as np
 import numpy.typing as npt
+from config import OurEnvConfig
 from gym import spaces
 from lux.config import EnvConfig
 from wrappers.observations import Observation, Unit
@@ -69,8 +70,8 @@ class ControllerWrapper(Controller):
 
         self.total_act_dims = self.no_op_dim_high
         
-        self.max_factories = 2
-        self.max_units = 2
+        self.max_factories = OurEnvConfig.MAX_FACTORIES_IN_ACTION_SPACES
+        self.max_units = OurEnvConfig.MAX_UNITS_IN_ACTION_SPACES
         action_space = spaces.MultiDiscrete(
             [3]* self.max_factories + [self.total_act_dims] * self.max_units
         ) # shape = (n,)

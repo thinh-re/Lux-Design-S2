@@ -51,6 +51,8 @@ class Board:
         ])
 
 class Cargo:
+    numpy_shape: int = 4
+    
     def __init__(self, raw_cargo_obs: Optional[Dict[str, Any]] = None) -> None:
         if raw_cargo_obs is None:
             self.ice: int = 0
@@ -69,6 +71,9 @@ class Cargo:
         ])
 
 class Factory:
+    # cargo shape + pos (2) + power (1) + strain_id (1)
+    numpy_shape = Cargo.numpy_shape + 4 
+    
     def __init__(self, raw_factory_obs: Optional[Dict[str, Any]] = None) -> None:
         if raw_factory_obs is None:
             self.cargo = Cargo()
@@ -158,6 +163,9 @@ class Unit:
             self.team_id: int = raw_unit_obs['team_id']
             self.unit_id: str = raw_unit_obs['unit_id']
             self.unit_type: str = raw_unit_obs['unit_type'] # HEAVY, LIGHT
+            
+    def numpy_shape(max_actions: int) -> int:
+        return Cargo.numpy_shape + 2 + 6 * max_actions + 2
         
     def actions_numpy(self, max_actions: int = 2):
         n = len(self.action_queue)
@@ -168,7 +176,7 @@ class Unit:
         
         return np.concatenate(action_queue[:max_actions], axis=0)
         
-    def numpy(self, max_actions: int = 2) -> np.ndarray:
+    def numpy(self, max_actions: int) -> np.ndarray:
         return np.concatenate([
             self.cargo.numpy(),
             self.pos,
@@ -203,24 +211,24 @@ class Units:
             lst.append(Unit(unit))
         return lst
     
-    def numpy(self, agent: str, max_units: int = 2) -> np.ndarray:
+    def numpy(self, agent: str, max_units: int, max_actions: int) -> np.ndarray:
         # The order depends on which agent
         if agent == 'player_0':
             return np.stack([
-                self.units_numpy(self.player_0, max_units),
-                self.units_numpy(self.player_1, max_units),
+                self.units_numpy(self.player_0, max_units, max_actions),
+                self.units_numpy(self.player_1, max_units, max_actions),
             ])
         else:
             return np.stack([
-                self.units_numpy(self.player_1, max_units),
-                self.units_numpy(self.player_0, max_units),
+                self.units_numpy(self.player_1, max_units, max_actions),
+                self.units_numpy(self.player_0, max_units, max_actions),
             ])
         
-    def units_numpy(self, units: List[Unit], max_units: int = 2) -> np.ndarray:
+    def units_numpy(self, units: List[Unit], max_units: int, max_actions: int) -> np.ndarray:
         assert max_units >= 1, "Max number of units must be at least 1"
         if len(units) < max_units:
             units += [Unit()] * (max_units - len(units))
-        return np.stack([unit.numpy() for unit in units[:max_units]], axis=0)
+        return np.stack([unit.numpy(max_actions) for unit in units[:max_units]], axis=0)
 
 class Player:
     def __init__(self, raw_player_obs: Dict[str, Any]) -> None:
@@ -235,3 +243,55 @@ class Observation:
     def __init__(self, raw_obs: Dict[str, Dict]) -> None:
         self.player_0: Player = Player(raw_obs['player_0'])
         self.player_1: Player = Player(raw_obs['player_1'])
+
+class RobotState:
+    def __init__(self, raw_robotstate: Dict[str, int]) -> None:
+        self.LIGHT: int = raw_robotstate['LIGHT']
+        self.HEAVY: int = raw_robotstate['HEAVY']
+        
+class RobotFactoryState(RobotState):
+    def __init__(self, raw_robotfactorystate: Dict[str, int]) -> None:
+        super().__init__(raw_robotfactorystate)
+        self.FACTORY: int = raw_robotfactorystate['FACTORY']
+
+class Consumption:
+    def __init__(self, raw_consumption: Dict[str, Any]) -> None:
+        self.power = RobotFactoryState(raw_consumption['power'])
+        self.water: int = raw_consumption['water']
+        self.metal: int = raw_consumption['metal']
+        self.ore = RobotState(raw_consumption['ore'])
+        self.ice = RobotState(raw_consumption['ice'])
+
+class Destroyed(RobotFactoryState):
+    def __init__(self, raw_destroyed: Dict[str, Any]) -> None:
+        super().__init__(raw_destroyed)
+        self.rubble = RobotState(raw_destroyed['rubble'])
+        self.lichen = RobotState(raw_destroyed['lichen'])
+        
+class Generation(Consumption):
+    def __init__(self, raw_generation: Dict[str, Any]) -> None:
+        super().__init__(raw_generation)
+        self.lichen: int = raw_generation['lichen']
+        self.build = RobotState(raw_generation['built'])
+        
+class PickUp:
+    def __init__(self, raw_pick: Dict[str, Any]) -> None:
+        self.power: int = raw_pick['power']
+        self.water: int = raw_pick['water']
+        self.metal: int = raw_pick['metal']
+        self.ore: int = raw_pick['ore']
+        self.ice: int = raw_pick['ice']
+        
+class Transfer(PickUp):
+    def __init__(self, raw_transfer: Dict[str, Any]) -> None:
+        super().__init__(raw_transfer)
+
+class State:
+    def __init__(self, raw_state: Dict[str, Dict]) -> None:
+        self.consumption = Consumption(raw_state['consumption'])
+        self.destroyed = Destroyed(raw_state['destroyed'])
+        self.generation = Generation(raw_state['generation'])
+        self.pickup = PickUp(raw_state['pickup'])
+        self.transfer = Transfer(raw_state['transfer'])
+        self.action_queue_updates_total: int = raw_state['action_queue_updates_total']
+        self.action_queue_updates_success: int = raw_state['action_queue_updates_success']
