@@ -70,10 +70,11 @@ class ControllerWrapper(Controller):
 
         self.total_act_dims = self.no_op_dim_high
         
+        self.actions_per_factories = 4
         self.max_factories = OurEnvConfig.MAX_FACTORIES_IN_ACTION_SPACES
         self.max_units = OurEnvConfig.MAX_UNITS_IN_ACTION_SPACES
         action_space = spaces.MultiDiscrete(
-            [3]* self.max_factories + [self.total_act_dims] * self.max_units
+            [self.actions_per_factories]* self.max_factories + [self.total_act_dims] * self.max_units
         ) # shape = (n,)
         super().__init__(action_space)
 
@@ -120,6 +121,8 @@ class ControllerWrapper(Controller):
             
         factories = shared_obs.factories.get_factories_of_agent(agent)
         for i, factory in enumerate(factories[:self.max_factories], start=0):
+            if action[i] == 3:
+                continue
             lux_action[factory.unit_id] = action[i]
 
         return lux_action
