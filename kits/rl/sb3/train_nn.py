@@ -32,6 +32,7 @@ class CustomNet(BaseFeaturesExtractor):
         self.c, self.h, self.w = Board.numpy_shape # (6, 48, 48)
         self.board_region: int = self.c * self.h * self.w
         self.cnn = nn.Sequential(
+            nn.BatchNorm2d(self.c),
             nn.Conv2d(self.c, 32, kernel_size=8, stride=4, padding=0),
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
@@ -53,6 +54,7 @@ class CustomNet(BaseFeaturesExtractor):
         
         self.n_others = self.observation_space_shape - self.board_region
         self.mlp = nn.Sequential(
+            nn.BatchNorm1d(self.n_others),
             nn.Linear(self.n_others, features_dim),
             nn.Tanh(),
             nn.Linear(features_dim, features_dim),
