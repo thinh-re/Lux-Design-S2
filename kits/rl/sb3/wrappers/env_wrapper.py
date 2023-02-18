@@ -239,7 +239,7 @@ class CustomEnvWrapper(gym.Wrapper):
             generation_reward,
             # TODO: rewards for pickup, transfer
         ])
-        print(current_game_state.real_env_steps, ':', consumption_reward, destroyed_reward, generation_reward, rewards)
+        # print(current_game_state.real_env_steps, ':', consumption_reward, destroyed_reward, generation_reward, rewards)
         return rewards
     
     def reset(self, **kwargs):
