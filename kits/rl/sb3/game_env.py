@@ -18,7 +18,7 @@ def make_env(
     seed: int = 0, 
     max_episode_steps=100,
     returns_controller_observation=False,
-    is_random_policy=True,
+    is_random_policy=False,
 ):
     def _init() -> Union[
         LuxAI_S2, 

@@ -6,7 +6,7 @@ from tap import Tap
 class TrainArgumentParser(Tap):
     seed: Optional[int] = 24 # seed
     n_envs: Optional[int] = 8 # number of parallel envs to run. Note that the rollout size is configured separately and invariant to this value
-    max_episode_steps: Optional[int] = 200 # Max steps per episode before truncating them
+    max_episode_steps: Optional[int] = 1000 # Max steps per episode before truncating them
     total_timesteps: Optional[int] = 3_000_000 # 3_000_000 # Total timesteps for training
     eval: Optional[bool] = False # If set, will only evaluate a given policy. Otherwise enters training mode
     model_path: Optional[str] = 'logs/models/best_model.zip' # Path to SB3 model weights to use for evaluation
