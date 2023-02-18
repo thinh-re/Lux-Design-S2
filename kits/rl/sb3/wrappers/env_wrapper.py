@@ -122,6 +122,9 @@ class CustomEnvWrapper(gym.Wrapper):
         metrics["ice_dug"] = current_state.generation.ice.HEAVY + current_state.generation.ice.LIGHT
         metrics["water_produced"] = current_state.generation.water
         metrics["ore_dug"] = current_state.generation.ore.HEAVY + current_state.generation.ore.LIGHT
+        
+        metrics["light_robots"] = current_state.generation.build.LIGHT
+        metrics["heavy_robots"] = current_state.generation.build.HEAVY
 
         # we save these two to see often the agent updates robot action queues and how often enough
         # power to do so and succeed (less frequent updates = more power is saved)
