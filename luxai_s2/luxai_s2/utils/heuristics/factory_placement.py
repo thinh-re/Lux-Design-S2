@@ -1,4 +1,5 @@
 import numpy as np
+import random
 from luxai_s2.unit import FactoryPlacementActionType
 from luxai_s2.state import ObservationStateDict
 

@@ -8,7 +8,9 @@ from wrappers import ControllerWrapper, CustomEnvWrapper, ObservationWrapper
 from wrappers.sb3_wrapper import SB3Wrapper
 
 from luxai_s2.env import LuxAI_S2
-from luxai_s2.utils.heuristics.factory_placement import place_near_random_ice
+from luxai_s2.utils.heuristics.factory_placement import (
+    place_near_random_ice, random_factory_placement)
+
 
 def make_env(
     env_id: str, 
@@ -16,6 +18,7 @@ def make_env(
     seed: int = 0, 
     max_episode_steps=100,
     returns_controller_observation=False,
+    is_random_policy=True,
 ):
     def _init() -> Union[
         LuxAI_S2, 
@@ -36,8 +39,8 @@ def make_env(
         # the provided place_near_random_ice function which will randomly select an ice tile and place a factory near it.
         env = SB3Wrapper(
             env,
-            factory_placement_policy=place_near_random_ice, # TODO: use rule-based?
-            controller=controller_wrapper, # TODO: use rule-based?,
+            factory_placement_policy=place_near_random_ice if not is_random_policy else random_factory_placement,
+            controller=controller_wrapper,
         )
         observation_wrapper = ObservationWrapper(env)  # changes observation to include a few simple features
         env = CustomEnvWrapper(observation_wrapper)  # convert to single agent, add our reward
