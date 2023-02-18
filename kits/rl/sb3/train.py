@@ -4,7 +4,7 @@ Note that luxai_s2 and stable_baselines3 are packages
 not available during the competition running (ATM)
 """
 
-
+import os
 import os.path as osp
 
 import torch as th
@@ -171,15 +171,18 @@ def main(args: TrainArgumentParser):
         "MlpPolicy",
         env,
         n_steps=rollout_steps // args.n_envs,
-        batch_size=800,
+        batch_size=args.batch_size,
         learning_rate=args.learning_rate,
         policy_kwargs=policy_kwargs,
         verbose=1,
-        n_epochs=2,
+        n_epochs=10,
         target_kl=0.05,
         gamma=0.99,
         tensorboard_log=osp.join(args.log_path),
     )
+    
+    if os.path.isfile(args.model_path):
+        model.load(args.model_path)
     
     if args.eval:
         evaluate(args, env_id, model)
@@ -217,7 +220,7 @@ def main_single_process(args: TrainArgumentParser):
         "MlpPolicy",
         env,
         n_steps=rollout_steps // args.n_envs,
-        batch_size=800,
+        batch_size=args.batch_size,
         learning_rate=args.learning_rate,
         policy_kwargs=policy_kwargs,
         verbose=1,
@@ -226,6 +229,8 @@ def main_single_process(args: TrainArgumentParser):
         gamma=0.99,
         tensorboard_log=osp.join(args.log_path),
     )
+    if os.path.isfile(args.model_path):
+        model.load(args.model_path)
     
     if args.eval:
         evaluate_one_process(args, env_id, model)

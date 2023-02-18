@@ -119,12 +119,12 @@ class CustomEnvWrapper(gym.Wrapper):
     def __info(self, current_state: State) -> Dict[str, float]:
         info = dict()
         metrics = dict()
-        metrics["ice_dug"] = current_state.generation.ice.HEAVY + current_state.generation.ice.LIGHT
-        metrics["water_produced"] = current_state.generation.water
-        metrics["ore_dug"] = current_state.generation.ore.HEAVY + current_state.generation.ore.LIGHT
+        metrics["produced_ice"] = current_state.generation.ice.HEAVY + current_state.generation.ice.LIGHT
+        metrics["produced_water"] = current_state.generation.water
+        metrics["produced_ore"] = current_state.generation.ore.HEAVY + current_state.generation.ore.LIGHT
         
-        metrics["light_robots"] = current_state.generation.build.LIGHT
-        metrics["heavy_robots"] = current_state.generation.build.HEAVY
+        metrics["robots_light"] = current_state.generation.build.LIGHT
+        metrics["robots_heavy"] = current_state.generation.build.HEAVY
         
         metrics["destroyed_factories"] = current_state.destroyed.FACTORY
         metrics["destroyed_heavy_robots"] = current_state.destroyed.HEAVY
@@ -171,10 +171,10 @@ class CustomEnvWrapper(gym.Wrapper):
         current_state_np = self.__destroyed_state(current_state)
         prev_state_np = self.__destroyed_state(prev_state)
         ratio = np.array([
-            200 / factories_to_place, # factories
-            6, # heavy robots
-            1.5, # light robots
-            0.02, # lichen
+            0, # 200 / factories_to_place, # factories
+            1.0, # 6, # heavy robots
+            0.5, # light robots
+            0., # lichen
             0, # rubble
         ])
         return np.sum((prev_state_np - current_state_np) * ratio)
@@ -222,8 +222,8 @@ class CustomEnvWrapper(gym.Wrapper):
             0.,
             0.02,
             0.02,
-            5.0,
-            1.0,
+            0.,
+            0.,
         ])
         return np.sum((current_state_np - prev_state_np) * ratio)
 
@@ -236,27 +236,27 @@ class CustomEnvWrapper(gym.Wrapper):
         factories_to_place: int,
     ) -> float:
         # consumption_reward = self.__consumption_reward(current_state, prev_state)
-        destroyed_reward = self.__destroyed_reward(current_state, prev_state, factories_to_place)
+        # destroyed_reward = self.__destroyed_reward(current_state, prev_state, factories_to_place)
         generation_reward = self.__generation_reward(current_state, prev_state)
         
         # encourage successful actions
-        new_updates = current_state.action_queue_updates_total - prev_state.action_queue_updates_total
-        successful_updates = current_state.action_queue_updates_success - current_state.action_queue_updates_success
-        failed_updates = new_updates - successful_updates
-        updates_reward = (successful_updates - failed_updates) / 10
+        # new_updates = current_state.action_queue_updates_total - prev_state.action_queue_updates_total
+        # successful_updates = current_state.action_queue_updates_success - current_state.action_queue_updates_success
+        # failed_updates = new_updates - successful_updates
+        # updates_reward = (successful_updates - failed_updates) / 10
         
         # if generation_reward > 0:
         #     pass
 
         rewards = sum([
             # consumption_reward,
-            destroyed_reward,
+            # destroyed_reward,
             generation_reward,
-            updates_reward
+            # updates_reward
             # TODO: rewards for pickup, transfer
         ])
         # print(current_game_state.real_env_steps, ':', updates_reward, generation_reward, rewards)
-        return rewards / 10.0
+        return rewards
     
     def reset(self, **kwargs):
         obs = self.env.reset(**kwargs)["player_0"]

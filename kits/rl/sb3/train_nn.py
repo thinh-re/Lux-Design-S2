@@ -67,11 +67,14 @@ class CustomNet(BaseFeaturesExtractor):
         # )
         
         self.mlp = nn.Sequential(
-            nn.Linear(self.observation_space_shape, features_dim),
+            nn.Linear(self.observation_space_shape, features_dim*2),
+            nn.Tanh(),
+            nn.Linear(features_dim*2, features_dim),
             nn.Tanh(),
             nn.Linear(features_dim, features_dim),
             nn.Tanh(),
         )
+        print('self.observation_space_shape', self.observation_space_shape, file=sys.stderr)
         print('No. parameters:', count_parameters(self), file=sys.stderr)
     
 
