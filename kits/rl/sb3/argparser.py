@@ -5,13 +5,13 @@ from tap import Tap
 
 class TrainArgumentParser(Tap):
     seed: Optional[int] = 12 # seed
-    n_envs: Optional[int] = 8 # number of parallel envs to run. Note that the rollout size is configured separately and invariant to this value
+    n_envs: Optional[int] = 10 # number of parallel envs to run. Note that the rollout size is configured separately and invariant to this value
     max_episode_steps: Optional[int] = 200 # Max steps per episode before truncating them
-    total_timesteps: Optional[int] = 100_000 # 3_000_000 # Total timesteps for training
+    total_timesteps: Optional[int] = 3_000_000 # 3_000_000 # Total timesteps for training
     eval: Optional[bool] = False # If set, will only evaluate a given policy. Otherwise enters training mode
     model_path: Optional[str] = None # Path to SB3 model weights to use for evaluation
     log_path: Optional[str] = 'logs' # Logging path
-
+    learning_rate: Optional[float] = 3e-4 # The learning rate
 
 def parse_args():
     import argparse

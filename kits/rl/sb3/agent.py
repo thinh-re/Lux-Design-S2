@@ -24,7 +24,7 @@ from wrappers import ControllerWrapper, ObservationWrapper
 # change this to use weights stored elsewhere
 # make sure the model weights are submitted with the other code files
 # any files in the logs folder are not necessary
-MODEL_WEIGHTS_RELATIVE_PATH = "./best_model.zip"
+MODEL_WEIGHTS_RELATIVE_PATH = "./logs/models/best_model.zip"
 
 
 class Agent:
@@ -142,7 +142,7 @@ class Agent:
         #         .numpy()
         #     )
 
-        action, _states = self.model.predict(obs, deterministic=True)
+        action, _states = self.model.predict(obs, deterministic=False)
         
         # use our controller which we trained with in train.py to generate a Lux S2 compatible action
         lux_action = self.controller.action_to_lux_action(
