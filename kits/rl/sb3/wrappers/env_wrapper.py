@@ -121,6 +121,7 @@ class CustomEnvWrapper(gym.Wrapper):
         metrics = dict()
         metrics["ice_dug"] = current_state.generation.ice.HEAVY + current_state.generation.ice.LIGHT
         metrics["water_produced"] = current_state.generation.water
+        metrics["ore_dug"] = current_state.generation.ore.HEAVY + current_state.generation.ore.LIGHT
 
         # we save these two to see often the agent updates robot action queues and how often enough
         # power to do so and succeed (less frequent updates = more power is saved)
@@ -232,10 +233,10 @@ class CustomEnvWrapper(gym.Wrapper):
         generation_reward = self.__generation_reward(current_state, prev_state)
         
         # encourage successful actions
-        # new_updates = current_state.action_queue_updates_total - prev_state.action_queue_updates_total
-        # successful_updates = current_state.action_queue_updates_success - current_state.action_queue_updates_success
-        # failed_updates = new_updates - successful_updates
-        # updates_reward = (successful_updates - failed_updates) / 10
+        new_updates = current_state.action_queue_updates_total - prev_state.action_queue_updates_total
+        successful_updates = current_state.action_queue_updates_success - current_state.action_queue_updates_success
+        failed_updates = new_updates - successful_updates
+        updates_reward = (successful_updates - failed_updates) / 10
         
         # if generation_reward > 0:
         #     pass
@@ -244,7 +245,7 @@ class CustomEnvWrapper(gym.Wrapper):
             # consumption_reward,
             destroyed_reward,
             generation_reward,
-            # updates_reward
+            updates_reward
             # TODO: rewards for pickup, transfer
         ])
         # print(current_game_state.real_env_steps, ':', updates_reward, generation_reward, rewards)
