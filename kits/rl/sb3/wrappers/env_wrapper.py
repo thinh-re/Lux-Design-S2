@@ -125,6 +125,10 @@ class CustomEnvWrapper(gym.Wrapper):
         
         metrics["light_robots"] = current_state.generation.build.LIGHT
         metrics["heavy_robots"] = current_state.generation.build.HEAVY
+        
+        metrics["destroyed_factories"] = current_state.destroyed.FACTORY
+        metrics["destroyed_heavy_robots"] = current_state.destroyed.HEAVY
+        metrics["destroyed_light_robots"] = current_state.destroyed.LIGHT
 
         # we save these two to see often the agent updates robot action queues and how often enough
         # power to do so and succeed (less frequent updates = more power is saved)
@@ -252,7 +256,7 @@ class CustomEnvWrapper(gym.Wrapper):
             # TODO: rewards for pickup, transfer
         ])
         # print(current_game_state.real_env_steps, ':', updates_reward, generation_reward, rewards)
-        return rewards
+        return rewards / 10.0
     
     def reset(self, **kwargs):
         obs = self.env.reset(**kwargs)["player_0"]
