@@ -8,7 +8,7 @@ from lux.config import EnvConfig
 from wrappers.observations import Observation
 
 
-class SimpleUnitObservationWrapper(gym.ObservationWrapper):
+class ObservationWrapper(gym.ObservationWrapper):
     """
     A simple state based observation to work with in pair with the SimpleUnitDiscreteController
 
@@ -28,7 +28,7 @@ class SimpleUnitObservationWrapper(gym.ObservationWrapper):
         self.observation_space = spaces.Box(-9999, 9999, shape=(13936,))
 
     def observation(self, obs: Dict[str, Any]) -> Dict[str, np.ndarray]:
-        return SimpleUnitObservationWrapper.convert_obs(obs, self.env.state.env_cfg)
+        return ObservationWrapper.convert_obs(obs, self.env.state.env_cfg)
 
     # we make this method static so the submission/evaluation code can use this as well
     @staticmethod

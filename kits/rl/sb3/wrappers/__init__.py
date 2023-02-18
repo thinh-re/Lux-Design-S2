@@ -1,3 +1,3 @@
-from .controllers_wrapper import SimpleUnitDiscreteController
-from .obs_wrappers import SimpleUnitObservationWrapper
+from .controllers_wrapper import ControllerWrapper
+from .obs_wrappers import ObservationWrapper
 from .env_wrapper import CustomEnvWrapper

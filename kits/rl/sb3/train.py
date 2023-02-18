@@ -50,9 +50,9 @@ def evaluate(
 ) -> None:
     model = model.load(args.model_path)
     video_length = 1000  # default horizon
-    eval_env = SubprocVecEnv(
-        [make_env(env_id, i, max_episode_steps=1000) for i in range(args.n_envs)]
-    )
+    eval_env = SubprocVecEnv([
+        make_env(env_id, i, max_episode_steps=1000) for i in range(args.n_envs)
+    ])
     eval_env = VecVideoRecorder(
         eval_env,
         osp.join(args.log_path, "eval_videos"),
@@ -72,7 +72,7 @@ def evaluate_one_process(
     '''Same as evaluate but use only one process. For debug only!'''
     model = model.load(args.model_path)
     video_length = 1000  # default horizon
-    eval_env = make_env(env_id, i, max_episode_steps=1000)()
+    eval_env, _, _ = make_env(env_id, 0, max_episode_steps=1000)()
     eval_env = VecVideoRecorder(
         eval_env,
         osp.join(args.log_path, "eval_videos"),
@@ -90,9 +90,9 @@ def train(
     env_id: str, 
     model: BaseAlgorithm,
 ) -> None:
-    eval_env = SubprocVecEnv(
-        [make_env(env_id, i, max_episode_steps=1000) for i in range(4)]
-    )
+    eval_env = SubprocVecEnv([
+        make_env(env_id, i, max_episode_steps=1000) for i in range(4)
+    ])
     eval_callback = EvalCallback(
         eval_env,
         best_model_save_path=osp.join(args.log_path, "models"),
@@ -115,7 +115,10 @@ def train_one_process(
     model: BaseAlgorithm,
 ) -> None:
     '''Same as train but use only one process. For debug only!'''
-    eval_env = make_env(env_id, 0, max_episode_steps=1000)()
+    eval_env, _, _ = make_env(
+        env_id, 0, max_episode_steps=1000, 
+        returns_controller_observation=True
+    )()
     eval_callback = EvalCallback(
         eval_env,
         best_model_save_path=osp.join(args.log_path, "models"),
@@ -147,11 +150,20 @@ def main(args: TrainArgumentParser):
         for i in range(args.n_envs)
     ])
     
+    _, controller_wrapper, observation_wrapper = make_env(
+        env_id, 0, max_episode_steps=args.max_episode_steps,
+        returns_controller_observation=True
+    )()
+    
     env.reset()
     rollout_steps = 4000
     policy_kwargs = dict(
         features_extractor_class=CustomNet,
-        features_extractor_kwargs=dict(features_dim=128),
+        features_extractor_kwargs=dict(
+            # observation_space=observation_wrapper.observation_space,
+            action_space=controller_wrapper.action_space,
+            features_dim=128,    
+        ),
     )
     
     # PPO from SB3
@@ -161,12 +173,12 @@ def main(args: TrainArgumentParser):
         n_steps=rollout_steps // args.n_envs,
         batch_size=800,
         learning_rate=3e-4,
+        policy_kwargs=policy_kwargs,
         verbose=1,
         n_epochs=2,
         target_kl=0.05,
         gamma=0.99,
         tensorboard_log=osp.join(args.log_path),
-        policy_kwargs=policy_kwargs,
     )
     
     if args.eval:
@@ -184,13 +196,20 @@ def main_single_process(args: TrainArgumentParser):
     # Creates a multiprocess vectorized wrapper for multiple environments, 
     # distributing each environment to its own process, 
     # allowing significant speed up when the environment is computationally complex.
-    env = make_env(env_id, 0, max_episode_steps=args.max_episode_steps)()
+    env, controller_wrapper, observation_wrapper = make_env(
+        env_id, 0, max_episode_steps=args.max_episode_steps,
+        returns_controller_observation=True
+    )()
     
     env.reset()
     rollout_steps = 4000
     policy_kwargs = dict(
         features_extractor_class=CustomNet,
-        features_extractor_kwargs=dict(features_dim=128),
+        features_extractor_kwargs=dict(
+            # observation_space=observation_wrapper.observation_space, # do not need to specify observation_space since PPO automatically adds observation_space into CustomNet
+            action_space=controller_wrapper.action_space,
+            features_dim=128,    
+        ),
     )
     
     # PPO from SB3

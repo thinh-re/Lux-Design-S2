@@ -26,7 +26,6 @@ class CustomNet(BaseFeaturesExtractor):
         features_dim: int = 128,
     ):
         super().__init__(observation_space, features_dim)
-        self.features_dim = features_dim
         self.action_dims: int = action_space.shape[0]
         self.observation_space_shape: int = observation_space.shape[0]
         

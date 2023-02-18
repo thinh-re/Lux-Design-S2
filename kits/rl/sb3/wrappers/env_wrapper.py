@@ -3,7 +3,7 @@ from typing import Dict, Tuple
 
 import gym
 import numpy as np
-from wrappers.obs_wrappers import SimpleUnitObservationWrapper
+from wrappers.obs_wrappers import ObservationWrapper
 
 from luxai_s2.state import StatsStateDict
 
@@ -16,7 +16,7 @@ class CustomEnvWrapper(gym.Wrapper):
         """
         super().__init__(env)
         self.prev_step_metrics = None
-        self.env: SimpleUnitObservationWrapper
+        self.env: ObservationWrapper
 
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, Dict]:
         """

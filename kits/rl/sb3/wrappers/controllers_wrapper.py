@@ -29,7 +29,7 @@ class Controller:
         raise NotImplementedError()
 
 
-class SimpleUnitDiscreteController(Controller):
+class ControllerWrapper(Controller):
     def __init__(self, env_cfg: EnvConfig) -> None:
         """
         A simple controller that controls only the robot that will get spawned.
