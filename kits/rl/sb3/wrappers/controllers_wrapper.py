@@ -73,7 +73,7 @@ class SimpleUnitDiscreteController(Controller):
         self.max_units = 2
         action_space = spaces.MultiDiscrete(
             [3]* self.max_factories + [self.total_act_dims] * self.max_units
-        )
+        ) # shape = (n,)
         super().__init__(action_space)
 
     def _is_move_action(self, id):

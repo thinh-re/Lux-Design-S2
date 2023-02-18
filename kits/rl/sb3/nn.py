@@ -1,29 +1,72 @@
 """
 Code for neural network inference and loading SB3 model weights
 """
+import io
 import sys
 import zipfile
 from typing import Dict
 
 import torch as th
+from gym import spaces
 from torch import Tensor, nn
+from utils import count_parameters
+from wrappers.observations import Board
 
 
 class Net(nn.Module):
-    def __init__(self, action_dims: int = 12):
+    def __init__(
+        self, 
+        observation_space: spaces.Box, # SimpleUnitObservationWrapper.observation_space
+        action_space: spaces.MultiDiscrete, # SimpleUnitDiscreteController.action_space
+        features_dim: int = 128,
+    ):
         super(Net, self).__init__()
-        self.action_dims = action_dims
-        self.mlp = nn.Sequential(
-            nn.Linear(13, 128),
-            nn.Tanh(),
-            nn.Linear(128, 128),
-            nn.Tanh(),
-        )
-        self.action_net = nn.Sequential(
-            nn.Linear(128, action_dims),
+        self.features_dim = features_dim
+        self.action_dims: int = action_space.shape[0]
+        self.observation_space_shape: int = observation_space.shape[0]
+        
+        # Board
+        self.c, self.h, self.w = Board.numpy_shape # (6, 48, 48)
+        self.board_region: int = self.c * self.h * self.w
+        self.cnn = nn.Sequential(
+            nn.Conv2d(self.c, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            nn.Flatten(),
         )
 
-    def act(self, x: Tensor, action_masks, deterministic: bool = False):
+        # Compute shape by doing one forward pass
+        with th.no_grad():
+            n_flatten = self.cnn(
+                # th.as_tensor(observation_space.sample()[None]).float()
+                th.randn((1, self.c, self.h, self.w))
+            ).shape[1]
+            
+        self.linear = nn.Sequential(
+            nn.Linear(n_flatten, features_dim), 
+            nn.ReLU(),
+        )
+        
+        self.n_others = self.observation_space_shape - self.board_region
+        self.mlp = nn.Sequential(
+            nn.Linear(self.n_others, features_dim),
+            nn.Tanh(),
+            nn.Linear(features_dim, features_dim),
+            nn.Tanh(),
+        )
+        
+        self.final = nn.Sequential(
+            nn.Linear(features_dim*2, features_dim),
+            nn.Tanh(),
+        )
+        print('No. parameters:', count_parameters(self))
+        
+        self.action_net = nn.Sequential(
+            nn.Linear(features_dim, self.action_dims),
+        )
+
+    def act(self, x: Tensor, action_masks: Tensor, deterministic: bool = False):
         latent_pi = self.forward(x)
         action_logits: Tensor = self.action_net(latent_pi)
         action_logits[~action_masks] = -1e8  # mask out invalid actions
@@ -33,14 +76,16 @@ class Net(nn.Module):
         else:
             return dist.mode
 
-    def forward(self, x: Tensor) -> Tensor:
-        x = self.mlp(x)
-        return x
+    def forward(self, x: th.Tensor) -> th.Tensor:
+        board = x[:, :self.board_region].reshape((-1, self.c, self.h, self.w))
+        board = self.linear(self.cnn(board))
 
-
-import io
-import os.path as osp
-
+        others = x[:, self.board_region:]
+        others = self.mlp(others)
+        
+        rs = th.cat([board, others], axis=1)
+        rs = self.final(rs)
+        return rs
 
 def load_policy(model_path: str) -> Net:
     # load .pth or .zip

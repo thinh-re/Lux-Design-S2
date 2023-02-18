@@ -24,9 +24,10 @@ class SimpleUnitObservationWrapper(gym.ObservationWrapper):
 
     def __init__(self, env: gym.Env) -> None:
         super().__init__(env)
+        # TODO: move to our EnvConfig
         self.observation_space = spaces.Box(-9999, 9999, shape=(13936,))
 
-    def observation(self, obs):
+    def observation(self, obs: Dict[str, Any]) -> Dict[str, np.ndarray]:
         return SimpleUnitObservationWrapper.convert_obs(obs, self.env.state.env_cfg)
 
     # we make this method static so the submission/evaluation code can use this as well

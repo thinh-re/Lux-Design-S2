@@ -5,10 +5,9 @@ import torch as th
 import torch.nn as nn
 from gym import spaces
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+from utils import count_parameters
 from wrappers.observations import Board
 
-def count_parameters(model: nn.Module):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 # Note: Copy to nn.py before submit!
 # TODO: Create share sub-module that includes custom network
@@ -20,11 +19,15 @@ class CustomNet(BaseFeaturesExtractor):
         This corresponds to the number of unit for the last layer.
     """
 
-    def __init__(self, observation_space: spaces.Box, features_dim: int = 12):
+    def __init__(
+        self, 
+        observation_space: spaces.Box, # SimpleUnitObservationWrapper.observation_space
+        action_space: spaces.MultiDiscrete, # SimpleUnitDiscreteController.action_space
+        features_dim: int = 128,
+    ):
         super().__init__(observation_space, features_dim)
-        self.action_dims = features_dim
-        
-        # The same as `SimpleUnitObservationWrapper.observation_space`
+        self.features_dim = features_dim
+        self.action_dims: int = action_space.shape[0]
         self.observation_space_shape: int = observation_space.shape[0]
         
         # Board
@@ -52,11 +55,9 @@ class CustomNet(BaseFeaturesExtractor):
         
         self.n_others = self.observation_space_shape - self.board_region
         self.mlp = nn.Sequential(
-            nn.Linear(self.n_others, 128),
+            nn.Linear(self.n_others, features_dim),
             nn.Tanh(),
-            nn.Linear(128, 128),
-            nn.Tanh(),
-            nn.Linear(128, features_dim),
+            nn.Linear(features_dim, features_dim),
             nn.Tanh(),
         )
         
@@ -80,30 +81,30 @@ class CustomNet(BaseFeaturesExtractor):
 
 # TODO:
 # ref: https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html
-class CustomCombinedExtractor(BaseFeaturesExtractor):
-    def __init__(self, observation_space: spaces.Dict, features_dim: int = 12):
-        # We do not know features-dim here before going over all the items,
-        # so put something dummy for now. PyTorch requires calling
-        # nn.Module.__init__ before adding modules
-        super().__init__(observation_space, features_dim=1)
+# class CustomCombinedExtractor(BaseFeaturesExtractor):
+#     def __init__(self, observation_space: spaces.Dict, features_dim: int = 12):
+#         # We do not know features-dim here before going over all the items,
+#         # so put something dummy for now. PyTorch requires calling
+#         # nn.Module.__init__ before adding modules
+#         super().__init__(observation_space, features_dim=1)
 
-        self.action_dims = features_dim
-        self.mlp = nn.Sequential(
-            nn.Linear(observation_space.shape[0], 128),
-            nn.Tanh(),
-            nn.Linear(128, 128),
-            nn.Tanh(),
-        )
-        self.action_net = nn.Sequential(
-            nn.Linear(128, self.action_dims),
-        )
+#         self.action_dims = features_dim
+#         self.mlp = nn.Sequential(
+#             nn.Linear(observation_space.shape[0], 128),
+#             nn.Tanh(),
+#             nn.Linear(128, 128),
+#             nn.Tanh(),
+#         )
+#         self.action_net = nn.Sequential(
+#             nn.Linear(128, self.action_dims),
+#         )
 
-    def forward(self, observations: Dict) -> th.Tensor:
+#     def forward(self, observations: Dict) -> th.Tensor:
         
-        encoded_tensor_list = []
+#         encoded_tensor_list = []
 
-        # self.extractors contain nn.Modules that do all the processing.
-        for key, extractor in self.extractors.items():
-            encoded_tensor_list.append(extractor(observations[key]))
-        # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
-        return th.cat(encoded_tensor_list, dim=1)
+#         # self.extractors contain nn.Modules that do all the processing.
+#         for key, extractor in self.extractors.items():
+#             encoded_tensor_list.append(extractor(observations[key]))
+#         # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
+#         return th.cat(encoded_tensor_list, dim=1)
