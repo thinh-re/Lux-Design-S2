@@ -11,11 +11,10 @@ e.g. print("message", file=sys.stderr)
 """
 
 import os.path as osp
-import sys
 
 import numpy as np
 import torch as th
-
+from game_env import make_env
 from lux.config import EnvConfig
 from nn import load_policy
 from wrappers import ControllerWrapper, ObservationWrapper
@@ -32,13 +31,21 @@ class Agent:
         self.opp_player = "player_1" if self.player == "player_0" else "player_0"
         np.random.seed(0)
         self.env_cfg: EnvConfig = env_cfg
+        
+        _, _, observation_wrapper = make_env(
+            "LuxAI_S2-v0", 0, max_episode_steps=100,
+            returns_controller_observation=True
+        )()
+        self.controller = ControllerWrapper(self.env_cfg)
 
         directory = osp.dirname(__file__)
         # load our RL policy
-        self.policy = load_policy(osp.join(directory, MODEL_WEIGHTS_RELATIVE_PATH))
+        self.policy = load_policy(
+            osp.join(directory, MODEL_WEIGHTS_RELATIVE_PATH),
+            observation_wrapper=observation_wrapper,
+            controller_wrapper=self.controller,
+        )
         self.policy.eval()
-
-        self.controller = ControllerWrapper(self.env_cfg)
 
     def bid_policy(self, step: int, obs, remainingOverageTime: int = 60):
         return dict(faction="AlphaStrike", bid=0)

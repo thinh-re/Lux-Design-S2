@@ -10,8 +10,9 @@ import torch as th
 from gym import spaces
 from torch import Tensor, nn
 from utils import count_parameters
+from wrappers.obs_wrappers import ObservationWrapper
 from wrappers.observations import Board
-
+from wrappers.controllers_wrapper import ControllerWrapper
 
 class Net(nn.Module):
     def __init__(
@@ -60,7 +61,7 @@ class Net(nn.Module):
             nn.Linear(features_dim*2, features_dim),
             nn.Tanh(),
         )
-        print('No. parameters:', count_parameters(self))
+        # print('No. parameters:', count_parameters(self))
         
         self.action_net = nn.Sequential(
             nn.Linear(features_dim, self.action_dims),
@@ -87,7 +88,7 @@ class Net(nn.Module):
         rs = self.final(rs)
         return rs
 
-def load_policy(model_path: str) -> Net:
+def load_policy(model_path: str, observation_wrapper: ObservationWrapper, controller_wrapper: ControllerWrapper) -> Net:
     # load .pth or .zip
     if model_path[-4:] == ".zip":
         with zipfile.ZipFile(model_path) as archive:
@@ -100,7 +101,10 @@ def load_policy(model_path: str) -> Net:
     else:
         sb3_state_dict: Dict = th.load(model_path, map_location="cpu")
 
-    model = Net()
+    model = Net(
+        observation_space=observation_wrapper.observation_space,
+        action_space=controller_wrapper.action_space,
+    )
     loaded_state_dict = {}
 
     # this code here works assuming the first keys in the sb3 state dict 
