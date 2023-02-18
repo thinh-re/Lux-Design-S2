@@ -220,8 +220,8 @@ class CustomEnvWrapper(gym.Wrapper):
             0.01,
             0.01,
             0.,
-            0.02,
-            0.02,
+            0.,
+            1.0,
             0.,
             0.,
         ])
