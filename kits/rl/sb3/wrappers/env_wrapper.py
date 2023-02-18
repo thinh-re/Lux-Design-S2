@@ -163,9 +163,9 @@ class CustomEnvWrapper(gym.Wrapper):
         current_state_np = self.__destroyed_state(current_state)
         prev_state_np = self.__destroyed_state(prev_state)
         ratio = np.array([
-            100 / factories_to_place, # factories
-            5, # heavy robots
-            1, # light robots
+            200 / factories_to_place, # factories
+            6, # heavy robots
+            1.5, # light robots
             0.02, # lichen
             0, # rubble
         ])
@@ -208,14 +208,14 @@ class CustomEnvWrapper(gym.Wrapper):
         current_state_np = self.__generation_state(current_state)
         prev_state_np = self.__generation_state(prev_state)
         ratio = np.array([
+            0.01,
+            0.01,
+            0.01,
+            0.01,
             0.02,
             0.02,
-            0.02,
-            0.02,
-            0.03,
-            0.03,
-            5.5,
-            1.5,
+            5.0,
+            1.0,
         ])
         return np.sum((current_state_np - prev_state_np) * ratio)
 
