@@ -53,6 +53,8 @@ class ActorCritic(nn.Module):
             nn.Tanh(),
         )
         
+        self.n_actors = len(action_dims)
+        
         actor_heads_dict = dict()
         for i, action_dim in enumerate(action_dims):
             actor_heads_dict[f'actor_{i}'] = nn.Sequential(    
@@ -79,7 +81,8 @@ class ActorCritic(nn.Module):
         actions: List[Tensor] = []
         action_logprobs: List[Tensor] = []
         
-        for actor_head in self.actor_heads.values():
+        for i in range(self.n_actors):
+            actor_head = self.actor_heads[f'actor_{i}']
             action_probs: Tensor = actor_head(intermediate_actor_features)
             dist = Categorical(action_probs)
             action: Tensor = dist.sample()
@@ -98,10 +101,11 @@ class ActorCritic(nn.Module):
         action_logprobs: List[Tensor] = []
         dist_entropy_lst: List[Tensor] = []
         
-        for actor_head in self.actor_heads.values():
+        for i in range(self.n_actors):
+            actor_head = self.actor_heads[f'actor_{i}']
             action_probs: Tensor = actor_head(intermediate_actor_features)
             dist = Categorical(action_probs)
-            action_logprob: Tensor = dist.log_prob(action)
+            action_logprob: Tensor = dist.log_prob(action[:, i])
             dist_entropy: Tensor = dist.entropy()
             
             action_logprobs.append(action_logprob)
@@ -109,7 +113,7 @@ class ActorCritic(nn.Module):
         
         state_values = self.critic(state)
         
-        return torch.Tensor(action_logprobs), state_values, torch.Tensor(dist_entropy_lst)
+        return torch.stack(action_logprobs, axis=1), state_values, torch.stack(dist_entropy_lst, axis=1)
 
 
 class PPO:
@@ -173,7 +177,7 @@ class PPO:
         old_state_values = torch.squeeze(torch.stack(self.buffer.state_values, dim=0)).detach().to(device)
 
         # calculate advantages
-        advantages = rewards.detach() - old_state_values.detach()
+        advantages = torch.unsqueeze(rewards.detach() - old_state_values.detach(), axis=1)
 
         # Optimize policy for K epochs
         for _ in range(self.K_epochs):
