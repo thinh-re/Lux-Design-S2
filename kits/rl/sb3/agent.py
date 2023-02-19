@@ -142,7 +142,7 @@ class Agent:
         #         .numpy()
         #     )
 
-        action, _states = self.model.predict(obs, deterministic=False)
+        action, _states = self.model.predict(obs, deterministic=True)
         
         # use our controller which we trained with in train.py to generate a Lux S2 compatible action
         lux_action = self.controller.action_to_lux_action(

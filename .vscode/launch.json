@@ -13,7 +13,7 @@
             "justMyCode": true,
             "args": [
                 "kits/rl/sb3/main.py",
-                "kits/python/main.py",
+                "kits/rl/sb3/main.py",
                 "-v",
                 "2",
                 "-o",

@@ -182,6 +182,7 @@ def main(args: TrainArgumentParser):
     )
     
     if os.path.isfile(args.model_path):
+        print(f"Load model from {args.model_path}")
         model.load(args.model_path)
     
     if args.eval:
@@ -230,6 +231,7 @@ def main_single_process(args: TrainArgumentParser):
         tensorboard_log=osp.join(args.log_path),
     )
     if os.path.isfile(args.model_path):
+        print(f"Load model from {args.model_path}")
         model.load(args.model_path)
     
     if args.eval:
