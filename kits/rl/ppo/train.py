@@ -15,19 +15,12 @@ def train():
     ####### initialize environment hyperparameters ######
     env_name = 'LuxAI_S2-v0'
 
-    has_continuous_action_space = False  # continuous action space; else discrete
-
     max_ep_len = 400                   # max timesteps in one episode
     max_training_timesteps = int(1e5)   # break training loop if timeteps > max_training_timesteps
 
     print_freq = max_ep_len * 4        # print avg reward in the interval (in num timesteps)
     log_freq = max_ep_len * 2           # log avg reward in the interval (in num timesteps)
     save_model_freq = int(2e4)          # save model frequency (in num timesteps)
-
-    action_std = None                  # starting std for action distribution (Multivariate Normal)
-    action_std_decay_rate = 0.05        # linearly decay action_std (action_std = action_std - action_std_decay_rate)
-    min_action_std = 0.1                # minimum action_std (stop decay after action_std <= min_action_std)
-    action_std_decay_freq = int(2.5e5)  # action_std decay frequency (in num timesteps)
     
     max_episode_steps: Optional[int] = 200 # Max steps per episode before truncating them
     #####################################################
@@ -55,10 +48,7 @@ def train():
     state_dim = env.observation_space.shape[0]
 
     # action space dimension
-    if has_continuous_action_space:
-        action_dim = env.action_space.shape[0]
-    else:
-        action_dim = env.action_space.n
+    action_dim = env.action_space.n
 
     ###################### logging ######################
 
@@ -111,15 +101,7 @@ def train():
     print("state space dimension : ", state_dim)
     print("action space dimension : ", action_dim)
     print("--------------------------------------------------------------------------------------------")
-    if has_continuous_action_space:
-        print("Initializing a continuous action space policy")
-        print("--------------------------------------------------------------------------------------------")
-        print("starting std of action distribution : ", action_std)
-        print("decay rate of std of action distribution : ", action_std_decay_rate)
-        print("minimum std of action distribution : ", min_action_std)
-        print("decay frequency of std of action distribution : " + str(action_std_decay_freq) + " timesteps")
-    else:
-        print("Initializing a discrete action space policy")
+    print("Initializing a discrete action space policy")
     print("--------------------------------------------------------------------------------------------")
     print("PPO update frequency : " + str(update_timestep) + " timesteps")
     print("PPO K epochs : ", K_epochs)
@@ -143,8 +125,7 @@ def train():
     # initialize a PPO agent
     ppo_agent = PPO(
         state_dim, action_dim, lr_actor, lr_critic, 
-        gamma, K_epochs, eps_clip, 
-        has_continuous_action_space, action_std
+        gamma, K_epochs, eps_clip,
     )
 
     # track total training time
@@ -189,10 +170,6 @@ def train():
             # update PPO agent
             if time_step % update_timestep == 0:
                 ppo_agent.update()
-
-            # if continuous action space; then decay action std of ouput action distribution
-            if has_continuous_action_space and time_step % action_std_decay_freq == 0:
-                ppo_agent.decay_action_std(action_std_decay_rate, min_action_std)
 
             # log in logging file
             if time_step % log_freq == 0:
