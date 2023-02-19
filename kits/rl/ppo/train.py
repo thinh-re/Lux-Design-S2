@@ -48,7 +48,7 @@ def train():
     state_dim = env.observation_space.shape[0]
 
     # action space dimension
-    action_dim = env.action_space.n
+    action_dims = [action_dim.n for action_dim in env.action_space]
 
     ###################### logging ######################
 
@@ -99,7 +99,7 @@ def train():
     print("printing average reward over episodes in last : " + str(print_freq) + " timesteps")
     print("--------------------------------------------------------------------------------------------")
     print("state space dimension : ", state_dim)
-    print("action space dimension : ", action_dim)
+    print("action space dimension : ", action_dims)
     print("--------------------------------------------------------------------------------------------")
     print("Initializing a discrete action space policy")
     print("--------------------------------------------------------------------------------------------")
@@ -124,7 +124,7 @@ def train():
 
     # initialize a PPO agent
     ppo_agent = PPO(
-        state_dim, action_dim, lr_actor, lr_critic, 
+        state_dim, action_dims, lr_actor, lr_critic, 
         gamma, K_epochs, eps_clip,
     )
 
@@ -158,7 +158,7 @@ def train():
 
             # select action with policy
             action = ppo_agent.select_action(state)
-            state, reward, done, _, _ = env.step(action)
+            state, reward, done, _ = env.step(action)
 
             # saving reward and is_terminals
             ppo_agent.buffer.rewards.append(reward)
