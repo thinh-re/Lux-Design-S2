@@ -29,9 +29,9 @@ class Action:
         self.end_id: int = -1
         self.action_type_id = action_type_id
         
-    def update_id_range(self, start_id: int, end_id: int) -> None:
+    def update_id_range(self, start_id: int) -> None:
         self.start_id = start_id
-        self.end_id = end_id
+        self.end_id = start_id + self.dim - 1
         
     def get_action(self, id: int) -> Optional[np.ndarray]:
         if id > self.end_id or id < self.start_id:

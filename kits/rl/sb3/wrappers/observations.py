@@ -163,6 +163,7 @@ class Unit:
             self.team_id: int = -1
             self.unit_id: str = -1
             self.unit_type: str = "LIGHT" # HEAVY, LIGHT
+            self.exists: bool = False
         else:
             # [array([0, 4, 0, 0, 0, 1]), ...]
             self.action_queue: List[np.ndarray] = list(raw_unit_obs['action_queue'])
@@ -173,9 +174,10 @@ class Unit:
             self.team_id: int = raw_unit_obs['team_id']
             self.unit_id: str = raw_unit_obs['unit_id']
             self.unit_type: str = raw_unit_obs['unit_type'] # HEAVY, LIGHT
+            self.exists: bool = True
             
     def numpy_shape(max_actions: int) -> int:
-        return Cargo.numpy_shape + 2 + 2 + 6
+        return Cargo.numpy_shape + 2 + 2 + 6 + 1
         
     def actions_numpy(self, max_actions: int = 2):
         n = len(self.action_queue)
@@ -225,6 +227,7 @@ class Unit:
             self.closest_tile(ore_map),
             self.closest_tile(factory_map),
             # self.actions_numpy(max_actions),
+            np.array([self.exists]).astype(np.float32),
         ])
 
 class Units:

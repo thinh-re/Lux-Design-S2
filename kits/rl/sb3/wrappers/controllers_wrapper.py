@@ -1,10 +1,12 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import numpy as np
 import numpy.typing as npt
 from config import OurEnvConfig
 from gym import spaces
 from lux.config import EnvConfig
+from wrappers.actions import (Action, DigAction, MoveAction, PickupAction,
+                              TransferAction)
 from wrappers.observations import Observation, Unit
 
 
@@ -55,27 +57,38 @@ class ControllerWrapper(Controller):
 
         """
         self.env_cfg = env_cfg
-        self.move_act_dims = 4
-        self.total_transferable_resource_types = 2 # ice, ore
-        self.transfer_act_dims = 5 * self.total_transferable_resource_types
-        self.pickup_act_dims = 1
-        self.dig_act_dims = 1
-        self.no_op_dims = 1
-
-        self.move_dim_high = self.move_act_dims
-        self.transfer_dim_high = self.move_dim_high + self.transfer_act_dims
-        self.pickup_dim_high = self.transfer_dim_high + self.pickup_act_dims
-        self.dig_dim_high = self.pickup_dim_high + self.dig_act_dims
-        self.no_op_dim_high = self.dig_dim_high + self.no_op_dims
-
-        self.total_act_dims = self.no_op_dim_high
         
-        self.actions_per_factories = 4
+        # self.move_act_dims = 4
+        # self.total_transferable_resource_types = 2 # ice, ore
+        # self.transfer_act_dims = 5 * self.total_transferable_resource_types
+        # self.pickup_act_dims = 1
+        # self.dig_act_dims = 1
+        # self.no_op_dims = 1
+
+        # self.move_dim_high = self.move_act_dims
+        # self.transfer_dim_high = self.move_dim_high + self.transfer_act_dims
+        # self.pickup_dim_high = self.transfer_dim_high + self.pickup_act_dims
+        # self.dig_dim_high = self.pickup_dim_high + self.dig_act_dims
+        # self.no_op_dim_high = self.dig_dim_high + self.no_op_dims
+
+        # self.total_act_dims = self.no_op_dim_high
+        
+        self.actions: List[Action] = []
+        i = 0
+        for action_cls in [MoveAction, TransferAction, PickupAction, DigAction]:
+            action: Action = action_cls(env_cfg)
+            self.actions.append(action)
+            action.update_id_range(i)
+            i += action.dim
+        self.total_actions_per_unit = sum([action.dim for action in self.actions]) + 1 # no op
+        
+        self.actions_per_factory = 4
         self.max_factories = OurEnvConfig.MAX_FACTORIES_IN_ACTION_SPACES
         self.max_units = OurEnvConfig.MAX_UNITS_IN_ACTION_SPACES
         action_space = spaces.MultiDiscrete(
-            [self.actions_per_factories]* self.max_factories + [self.total_act_dims] * self.max_units
+            [self.actions_per_factory]* self.max_factories + [self.total_actions_per_unit] * self.max_units
         ) # shape = (n,)
+        
         super().__init__(action_space)
 
     def _is_move_action(self, id: int) -> bool:
@@ -129,28 +142,27 @@ class ControllerWrapper(Controller):
 
         return lux_action
     
-    def __unit_action(self, unit: Unit, action: int, lux_action: Dict[str, Any]) -> None:
+    def __unit_action(
+        self, 
+        unit: Unit, 
+        id: int, 
+        lux_action: Dict[str, Any],
+    ) -> None:
         action_queue = []
-        no_op = False
-        if self._is_move_action(action):
-            action_queue = [self._get_move_action(action)]
-        elif self._is_transfer_action(action):
-            action_queue = [self._get_transfer_action(action)]
-        elif self._is_pickup_action(action):
-            action_queue = [self._get_pickup_action(action)]
-        elif self._is_dig_action(action):
-            action_queue = [self._get_dig_action(action)]
-        else:
-            # action is a no_op, so we don't update the action queue
-            no_op = True
-
+        
+        for action_ctl in self.actions:
+            action = action_ctl.get_action(id)
+            if action is not None:
+                action_queue = [action]
+                break
+        
         # simple trick to help agents conserve power is to avoid updating the action queue
         # if the agent was previously trying to do that particular action already
-        if len(unit.action_queue) > 0 and len(action_queue) > 0:
-            same_actions = (unit.action_queue[0] == action_queue[0]).all()
-            if same_actions:
-                no_op = True
-        if not no_op:
+        # if len(unit.action_queue) > 0 and len(action_queue) > 0:
+        #     same_actions = (unit.action_queue[0] == action_queue[0]).all()
+        #     if same_actions:
+        #         no_op = True
+        if len(action_queue) > 0:
             lux_action[unit.unit_id] = action_queue
 
     def action_masks(self, agent: str, obs: Dict[str, Any]):
