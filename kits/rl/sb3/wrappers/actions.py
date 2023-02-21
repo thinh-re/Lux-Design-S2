@@ -37,10 +37,10 @@ class Action:
         if id > self.end_id or id < self.start_id:
             return None
         else:
-            return self.__get_action(id - self.start_id)
+            return self._get_action(id - self.start_id)
         
     @abstractmethod
-    def __get_action(self, id: int) -> np.ndarray:
+    def _get_action(self, id: int) -> np.ndarray:
         """Convert each action type to numpy action
 
         Args:
@@ -72,10 +72,10 @@ class Action:
         if action[0] != self.action_type_id:
             return False
         
-        return self.__is_useless_action(unit, action, game_state)
+        return self._is_useless_action(unit, action, game_state)
     
     @abstractmethod
-    def __is_useless_action(
+    def _is_useless_action(
         self, 
         unit: Unit,
         action: np.ndarray,
@@ -89,7 +89,7 @@ class MoveAction(Action):
         super().__init__(action_type_id=0, dim=4, env_cfg=env_cfg)
         # 4 directions: up, right, down, left (ignore move center)
         
-    def __get_action(self, id: int) -> np.ndarray:
+    def _get_action(self, id: int) -> np.ndarray:
         return [
             self.action_type_id, # action_type
             id+1, # direction
@@ -99,7 +99,7 @@ class MoveAction(Action):
             1, # n
         ]
         
-    def __is_useless_action(
+    def _is_useless_action(
         self, 
         unit: Unit,
         action: np.ndarray,
@@ -120,7 +120,7 @@ class TransferAction(Action):
         super().__init__(action_type_id=1, dim=5*2, env_cfg=env_cfg)
         # ore(5), ice(5)
         
-    def __get_action(self, id: int) -> np.ndarray:
+    def _get_action(self, id: int) -> np.ndarray:
         # [1, direction, resource_type, self.env_cfg.max_transfer_amount, 0, 1]
         return [
             self.action_type_id, # action_type
@@ -135,7 +135,7 @@ class PickupAction(Action):
     def __init__(self, env_cfg: EnvConfig):
         super().__init__(action_type_id=2, dim=1, env_cfg=env_cfg)
         
-    def __get_action(self, id: int) -> np.ndarray:
+    def _get_action(self, id: int) -> np.ndarray:
         # Only pickup power
         # [2, 0, 4, self.env_cfg.max_transfer_amount, 0, 1]
         return [
@@ -151,7 +151,7 @@ class DigAction(Action):
     def __init__(self, env_cfg: EnvConfig):
         super().__init__(action_type_id=3, dim=1, env_cfg=env_cfg)
         
-    def __get_action(self, id: int) -> np.ndarray:
+    def _get_action(self, id: int) -> np.ndarray:
         # Only pickup power
         # [3, 0, 0, 0, 0, 1]
         return [
