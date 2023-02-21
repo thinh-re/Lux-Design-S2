@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import numpy as np
 from lux.config import EnvConfig
@@ -90,14 +90,14 @@ class MoveAction(Action):
         # 4 directions: up, right, down, left (ignore move center)
         
     def _get_action(self, id: int) -> np.ndarray:
-        return [
+        return np.array([
             self.action_type_id, # action_type
             id+1, # direction
             0, # resource_type
             0, # amount
             0, # repeat
             1, # n
-        ]
+        ])
         
     def _is_useless_action(
         self, 
@@ -122,14 +122,14 @@ class TransferAction(Action):
         
     def _get_action(self, id: int) -> np.ndarray:
         # [1, direction, resource_type, self.env_cfg.max_transfer_amount, 0, 1]
-        return [
+        return np.array([
             self.action_type_id, # action_type
             id % 5, # direction
             id // 5, # resource_type
             self.env_cfg.max_transfer_amount, # amount
             0, # repeat
             1, # n
-        ]
+        ])
     
 class PickupAction(Action):
     def __init__(self, env_cfg: EnvConfig):
@@ -138,14 +138,14 @@ class PickupAction(Action):
     def _get_action(self, id: int) -> np.ndarray:
         # Only pickup power
         # [2, 0, 4, self.env_cfg.max_transfer_amount, 0, 1]
-        return [
+        return np.array([
             self.action_type_id, # action_type
             0, # direction
             4, # resource_type
             self.env_cfg.max_transfer_amount, # amount
             0, # repeat
             1, # n
-        ]
+        ])
         
 class DigAction(Action):
     def __init__(self, env_cfg: EnvConfig):
@@ -154,11 +154,11 @@ class DigAction(Action):
     def _get_action(self, id: int) -> np.ndarray:
         # Only pickup power
         # [3, 0, 0, 0, 0, 1]
-        return [
+        return np.array([
             self.action_type_id, # action_type
             0, # direction
             0, # resource_type
             0, # amount
             0, # repeat
             1, # n
-        ]
+        ])

@@ -91,33 +91,6 @@ class ControllerWrapper(Controller):
         
         super().__init__(action_space)
 
-    def _is_move_action(self, id: int) -> bool:
-        return id < self.move_dim_high
-
-    def _get_move_action(self, id: int) -> np.ndarray:
-        # move direction is id + 1 since we don't allow move center here
-        return np.array([0, id + 1, 0, 0, 0, 1])
-
-    def _is_transfer_action(self, id: int) -> bool:
-        return id < self.transfer_dim_high
-
-    def _get_transfer_action(self, id: int) -> np.ndarray:
-        id = id - self.move_dim_high
-        transfer_dir = id % 5
-        return np.array([1, transfer_dir, 0, self.env_cfg.max_transfer_amount, 0, 1])
-
-    def _is_pickup_action(self, id: int) -> bool:
-        return id < self.pickup_dim_high
-
-    def _get_pickup_action(self, id: int) -> np.ndarray:
-        return np.array([2, 0, 4, self.env_cfg.max_transfer_amount, 0, 1])
-
-    def _is_dig_action(self, id: int) -> bool:
-        return id < self.dig_dim_high
-
-    def _get_dig_action(self, id: int) -> np.ndarray:
-        return np.array([3, 0, 0, 0, 0, 1])
-
     def action_to_lux_action(
         self, 
         agent: str, 
