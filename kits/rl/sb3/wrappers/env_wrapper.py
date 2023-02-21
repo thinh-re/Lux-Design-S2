@@ -224,14 +224,14 @@ class CustomEnvWrapper(gym.Wrapper):
         current_state_np = self.__generation_state(current_state)
         prev_state_np = self.__generation_state(prev_state)
         ratio = np.array([
-            0.01,
-            0.01,
-            0.01,
-            0.,
-            0.,
-            1.0,
-            0.,
-            0.,
+            0.01, # ice
+            0.01, # metal
+            0.01, # ore
+            0., # power
+            0., # lichen
+            1.0, # water
+            0., # heavy robots
+            0., # light robots
         ])
         return np.sum((current_state_np - prev_state_np) * ratio)
 
@@ -244,7 +244,7 @@ class CustomEnvWrapper(gym.Wrapper):
         factories_to_place: int,
     ) -> float:
         # consumption_reward = self.__consumption_reward(current_state, prev_state)
-        # destroyed_reward = self.__destroyed_reward(current_state, prev_state, factories_to_place)
+        destroyed_reward = self.__destroyed_reward(current_state, prev_state, factories_to_place)
         generation_reward = self.__generation_reward(current_state, prev_state)
         
         # encourage successful actions
@@ -258,12 +258,13 @@ class CustomEnvWrapper(gym.Wrapper):
 
         rewards = sum([
             # consumption_reward,
-            # destroyed_reward,
+            destroyed_reward,
             generation_reward,
             updates_reward
             # TODO: rewards for pickup, transfer
         ])
-        # print(current_game_state.real_env_steps, ':', updates_reward, generation_reward, rewards)
+        # print(current_game_state.real_env_steps, ':', 
+        #       destroyed_reward, updates_reward, generation_reward, rewards)
         return rewards
     
     def reset(self, **kwargs):
