@@ -124,17 +124,26 @@ class Factories:
         return lst
     
     def numpy(self, agent: str, max_factories: int = 2) -> np.ndarray:
-        # The order depends on which agent
+        """Returns the observation of factories
+        The order is as follows:
+        - Our factories
+        - Opponent's factories
+
+        Args:
+            agent (str): string "player_0" or "player_1"
+            max_factories (int, optional): Max number of factories per player. Defaults to 2.
+
+        Returns:
+            np.ndarray: Numerical observation of factories
+        """
+        lst = [
+            self.factories_numpy(self.player_0_factories, max_factories),
+            self.factories_numpy(self.player_1_factories, max_factories),
+        ]
         if agent == 'player_0':
-            return np.stack([
-                self.factories_numpy(self.player_0_factories, max_factories),
-                self.factories_numpy(self.player_1_factories, max_factories),
-            ], axis=0)
+            return np.stack(lst, axis=0)
         else:
-            return np.stack([
-                self.factories_numpy(self.player_1_factories, max_factories),
-                self.factories_numpy(self.player_0_factories, max_factories),
-            ], axis=0)
+            return np.stack(reversed(lst), axis=0)
         
     def factories_numpy(self, factories: List[Factory], max_factories: int = 2) -> np.ndarray:
         assert max_factories >= 1, "Max number of factories must be at least 1"
@@ -166,7 +175,7 @@ class Unit:
             self.unit_type: str = raw_unit_obs['unit_type'] # HEAVY, LIGHT
             
     def numpy_shape(max_actions: int) -> int:
-        return Cargo.numpy_shape + 2 + 2 + 4 # + 6 * max_actions
+        return Cargo.numpy_shape + 2 + 2 + 6
         
     def actions_numpy(self, max_actions: int = 2):
         n = len(self.action_queue)
@@ -184,13 +193,22 @@ class Unit:
             map (np.ndarray): map 48 x 48 boolean
 
         Returns:
-            np.ndarray: position of closest tile for ex: normalized [-0.2, 0.03]
+            np.ndarray: normalized position of closest tile for ex: [-0.2, 0.03]
         """
-        distance = np.mean((map - self.pos) ** 2, axis=1)
-        # normalize the ice tile location
-        return (map[np.argmin(distance)] - self.pos) / EnvConfig.map_size
+        if map.shape[0] > 0:
+            distance = np.mean((map - self.pos) ** 2, axis=1)
+            return (map[np.argmin(distance)] - self.pos) / EnvConfig.map_size
+        else:
+            return np.array([-1, -1])
         
-    def numpy(self, max_actions: int, ice_map: np.ndarray, ore_map: np.ndarray, env_config: EnvConfig) -> np.ndarray:
+    def numpy(
+        self, 
+        max_actions: int, 
+        ice_map: np.ndarray, 
+        ore_map: np.ndarray,
+        factory_map: np.ndarray,
+        env_config: EnvConfig,
+    ) -> np.ndarray:
         cargo_space = env_config.ROBOTS[self.unit_type].CARGO_SPACE
         battery_cap = env_config.ROBOTS[self.unit_type].BATTERY_CAPACITY
         return np.concatenate([
@@ -205,6 +223,7 @@ class Unit:
             ]),
             self.closest_tile(ice_map),
             self.closest_tile(ore_map),
+            self.closest_tile(factory_map),
             # self.actions_numpy(max_actions),
         ])
 
@@ -236,18 +255,51 @@ class Units:
         max_actions: int,
         ice_map: np.ndarray, 
         ore_map: np.ndarray,
+        our_factory_map: np.ndarray,
+        opponent_factory_map: np.ndarray,
         env_config: EnvConfig,
     ) -> np.ndarray:
-        # The order depends on which agent
         if agent == 'player_0':
             return np.stack([
-                self.units_numpy(self.player_0, max_units, max_actions, ice_map, ore_map, env_config),
-                self.units_numpy(self.player_1, max_units, max_actions, ice_map, ore_map, env_config),
+                self.units_numpy(
+                    self.player_0, 
+                    max_units, 
+                    max_actions, 
+                    ice_map, 
+                    ore_map,
+                    our_factory_map,
+                    env_config,
+                ),
+                self.units_numpy(
+                    self.player_1, 
+                    max_units, 
+                    max_actions, 
+                    ice_map, 
+                    ore_map,
+                    opponent_factory_map,
+                    env_config,
+                ),
             ])
         else:
             return np.stack([
-                self.units_numpy(self.player_1, max_units, max_actions, ice_map, ore_map, env_config),
-                self.units_numpy(self.player_0, max_units, max_actions, ice_map, ore_map, env_config),
+                self.units_numpy(
+                    self.player_1, 
+                    max_units, 
+                    max_actions, 
+                    ice_map, 
+                    ore_map,
+                    our_factory_map,
+                    env_config,
+                ),
+                self.units_numpy(
+                    self.player_0, 
+                    max_units, 
+                    max_actions, 
+                    ice_map, 
+                    ore_map,
+                    opponent_factory_map,
+                    env_config,
+                ),
             ])
         
     def units_numpy(
@@ -257,12 +309,19 @@ class Units:
         max_actions: int,
         ice_map: np.ndarray, 
         ore_map: np.ndarray,
+        factory_map: np.ndarray,
         env_config: EnvConfig,
     ) -> np.ndarray:
         assert max_units >= 1, "Max number of units must be at least 1"
         if len(units) < max_units:
             units += [Unit()] * (max_units - len(units))
-        return np.stack([unit.numpy(max_actions, ice_map, ore_map, env_config) for unit in units[:max_units]], axis=0)
+        return np.stack([unit.numpy(
+            max_actions, 
+            ice_map, 
+            ore_map, 
+            factory_map,
+            env_config,
+        ) for unit in units[:max_units]], axis=0)
 
 class Player:
     def __init__(self, raw_player_obs: Dict[str, Any]) -> None:

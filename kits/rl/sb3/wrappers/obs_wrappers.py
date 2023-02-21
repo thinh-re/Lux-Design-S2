@@ -38,13 +38,23 @@ class ObservationWrapper(gym.ObservationWrapper):
     # we make this method static so the submission/evaluation code can use this as well
     @staticmethod
     def convert_obs(obs: Dict[str, Any], env_cfg: EnvConfig) -> Dict[str, npt.NDArray]:
-        '''
-        Returns 
-        {
-            'player_0': array([...]),
-            'player_1': array([...]),
-        }
-        '''
+        """Convert raw observation into numerical observation for training
+        Assumptions:
+            1. We are player_0
+            2. Player player_1 is kept alive with no actions
+
+        Args:
+            obs (Dict[str, Any]): raw observation
+            env_cfg (EnvConfig): environment config
+
+        Returns:
+            Dict[str, npt.NDArray]: Dict of each player's observation
+                Ex:
+                {
+                    'player_0': array([...]),
+                    'player_1': array([...]),
+                }
+        """
         observation_obj = Observation(obs)
         mapped_observation = dict()
         
@@ -57,6 +67,10 @@ class ObservationWrapper(gym.ObservationWrapper):
         ore_map = observation_player.board.ore
         ore_tile_locations = np.argwhere(ore_map == 1)
         
+        # Assume we are "player_0"
+        our_factory_map = np.array([factory.pos for factory in observation_obj.player_0.factories.player_0_factories])
+        opponent_factory_map = np.array([factory.pos for factory in observation_obj.player_0.factories.player_1_factories])
+        
         for agent in obs.keys():
             # board = observation_player.board.numpy()
             factories = observation_player.factories.numpy(
@@ -65,7 +79,10 @@ class ObservationWrapper(gym.ObservationWrapper):
             units = observation_player.units.numpy(
                 agent, max_units=OurEnvConfig.MAX_UNITS_IN_OBSERVATION,
                 max_actions=OurEnvConfig.MAX_ACTIONS_PER_UNIT_IN_OBSERVATION,
-                ice_map=ice_tile_locations, ore_map=ore_tile_locations,
+                ice_map=ice_tile_locations, 
+                ore_map=ore_tile_locations,
+                our_factory_map=our_factory_map,
+                opponent_factory_map=opponent_factory_map,
                 env_config=env_cfg,
             )
             mapped_observation[agent] = np.concatenate([
