@@ -29,7 +29,6 @@ class Controller:
         """
         raise NotImplementedError()
 
-
 class ControllerWrapper(Controller):
     def __init__(self, env_cfg: EnvConfig) -> None:
         """
@@ -39,7 +38,7 @@ class ControllerWrapper(Controller):
         For the robot unit
         - 4 cardinal direction movement (4 dims)
         - a move center no-op action (1 dim)
-        - transfer action just for transferring ice in 4 cardinal directions or center (5)
+        - transfer actions: each resource in 4 cardinal directions or center (5)*2
         - pickup action for power (1 dims)
         - dig action (1 dim)
         - no op action (1 dim) - equivalent to not submitting an action queue which costs power
@@ -57,7 +56,8 @@ class ControllerWrapper(Controller):
         """
         self.env_cfg = env_cfg
         self.move_act_dims = 4
-        self.transfer_act_dims = 5
+        self.total_transferable_resource_types = 2 # ice, ore
+        self.transfer_act_dims = 5 * self.total_transferable_resource_types
         self.pickup_act_dims = 1
         self.dig_act_dims = 1
         self.no_op_dims = 1
@@ -78,39 +78,41 @@ class ControllerWrapper(Controller):
         ) # shape = (n,)
         super().__init__(action_space)
 
-    def _is_move_action(self, id):
+    def _is_move_action(self, id: int) -> bool:
         return id < self.move_dim_high
 
-    def _get_move_action(self, id):
+    def _get_move_action(self, id: int) -> np.ndarray:
         # move direction is id + 1 since we don't allow move center here
         return np.array([0, id + 1, 0, 0, 0, 1])
 
-    def _is_transfer_action(self, id):
+    def _is_transfer_action(self, id: int) -> bool:
         return id < self.transfer_dim_high
 
-    def _get_transfer_action(self, id):
+    def _get_transfer_action(self, id: int) -> np.ndarray:
         id = id - self.move_dim_high
         transfer_dir = id % 5
         return np.array([1, transfer_dir, 0, self.env_cfg.max_transfer_amount, 0, 1])
 
-    def _is_pickup_action(self, id):
+    def _is_pickup_action(self, id: int) -> bool:
         return id < self.pickup_dim_high
 
-    def _get_pickup_action(self, id):
+    def _get_pickup_action(self, id: int) -> np.ndarray:
         return np.array([2, 0, 4, self.env_cfg.max_transfer_amount, 0, 1])
 
-    def _is_dig_action(self, id):
+    def _is_dig_action(self, id: int) -> bool:
         return id < self.dig_dim_high
 
-    def _get_dig_action(self, id):
+    def _get_dig_action(self, id: int) -> np.ndarray:
         return np.array([3, 0, 0, 0, 0, 1])
 
     def action_to_lux_action(
-        self, agent: str, obs: Dict[str, Any], action: npt.NDArray
+        self, 
+        agent: str, 
+        obs: Dict[str, Any], 
+        action: npt.NDArray,
     ) -> Dict:
         """
-        Returns:
-            {'factory_0': 0 or 1 or 2}
+        Returns: {'factory_0': 0 or 1 or 2}
         """
         observation_obj = Observation(obs)
         shared_obs = observation_obj.player_0
@@ -153,6 +155,7 @@ class ControllerWrapper(Controller):
 
     def action_masks(self, agent: str, obs: Dict[str, Any]):
         """
+        Note: this function is not used anywhere!
         Defines a simplified action mask for this controller's action space
 
         Doesn't account for whether robot has enough power

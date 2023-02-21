@@ -1,22 +1,24 @@
 import copy
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import gym
 import numpy as np
+from lux.team import Team
+from wrappers.controllers_wrapper import ControllerWrapper
 from wrappers.obs_wrappers import ObservationWrapper
 from wrappers.observations import State
-from lux.team import Team
 
 from luxai_s2.state.state import State as GameState
 
 
 class CustomEnvWrapper(gym.Wrapper):
-    def __init__(self, env: gym.Env) -> None:
+    def __init__(self, env: gym.Env, controller_wrapper: ControllerWrapper) -> None:
         """
         Adds a custom reward and turns the LuxAI_S2 environment 
         into a single-agent environment for easy training
         """
         super().__init__(env)
+        self.controller_wrapper = controller_wrapper
         self.prev_step_metrics = None
         self.env: ObservationWrapper
         
@@ -47,9 +49,8 @@ class CustomEnvWrapper(gym.Wrapper):
         agent = "player_0"
         opp_agent = "player_1"
         
-        current_game_state: GameState = self.env.state
-
-        self.__opponent(current_game_state, opp_agent)
+        prev_game_state: GameState = self.env.state
+        self.__opponent(prev_game_state, opp_agent)
 
         # submit actions for just one agent to make it single-agent
         # and save single-agent versions of the data below
@@ -58,11 +59,15 @@ class CustomEnvWrapper(gym.Wrapper):
         obs, _, done, _ = self.env.step(action)
         obs = obs[agent]
         done = done[agent]
+        
+        current_game_state: GameState = self.env.state
 
         # we collect stats on teams here. These are useful stats that can be used to help generate reward functions
         current_state = State(current_game_state.stats[agent])
         
         self.__reset_game_states(current_game_state)
+        
+        # self.__check_useless_actions(action, current_state)
 
         if len(self.prev_states) > 0:
             prev_state = self.prev_states[-1]
@@ -78,6 +83,9 @@ class CustomEnvWrapper(gym.Wrapper):
         
         self.__backup_game_states(current_game_state, current_state)
         return obs, reward, done, self.__info(current_state)
+    
+    def __check_useless_actions(self, action: np.ndarray, current_state: State) -> None:
+        pass
     
     def __backup_game_states(self, current_game_state: GameState, current_state: GameState) -> None:
         self.prev_states.append(copy.deepcopy(current_state))

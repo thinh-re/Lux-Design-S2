@@ -143,7 +143,7 @@ class Factories:
         if agent == 'player_0':
             return np.stack(lst, axis=0)
         else:
-            return np.stack(reversed(lst), axis=0)
+            return np.stack(list(reversed(lst)), axis=0)
         
     def factories_numpy(self, factories: List[Factory], max_factories: int = 2) -> np.ndarray:
         assert max_factories >= 1, "Max number of factories must be at least 1"

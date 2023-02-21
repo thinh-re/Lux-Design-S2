@@ -43,7 +43,7 @@ def make_env(
             controller=controller_wrapper,
         )
         observation_wrapper = ObservationWrapper(env)  # changes observation to include a few simple features
-        env = CustomEnvWrapper(observation_wrapper)  # convert to single agent, add our reward
+        env = CustomEnvWrapper(observation_wrapper, controller_wrapper)  # convert to single agent, add our reward
         env = TimeLimit(
             env, max_episode_steps=max_episode_steps
         )  # set horizon to 100 to make training faster. Default is 1000
