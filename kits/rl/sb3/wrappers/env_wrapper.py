@@ -235,7 +235,6 @@ class CustomEnvWrapper(gym.Wrapper):
         ])
         return np.sum((current_state_np - prev_state_np) * ratio)
 
-    
     def reward_function(
         self, 
         current_game_state: GameState,
@@ -251,7 +250,7 @@ class CustomEnvWrapper(gym.Wrapper):
         new_updates = current_state.action_queue_updates_total - prev_state.action_queue_updates_total
         successful_updates = current_state.action_queue_updates_success - current_state.action_queue_updates_success
         failed_updates = new_updates - successful_updates
-        updates_reward = - failed_updates / 1000
+        updates_reward = - failed_updates * 1e-5
         
         # if generation_reward > 0:
         #     pass
@@ -262,7 +261,7 @@ class CustomEnvWrapper(gym.Wrapper):
             generation_reward,
             updates_reward
             # TODO: rewards for pickup, transfer
-        ])
+        ]) + 1e-5
         # print(current_game_state.real_env_steps, ':', 
         #       destroyed_reward, updates_reward, generation_reward, rewards)
         return rewards
