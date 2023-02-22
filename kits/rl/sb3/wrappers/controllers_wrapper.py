@@ -5,12 +5,11 @@ import numpy.typing as npt
 from config import OurEnvConfig
 from gym import spaces
 from lux.config import EnvConfig
-from wrappers.actions import (Action, DigAction, MoveAction, PickupAction,
-                              TransferAction)
+from wrappers.actions import Action, DigAction, MoveAction, PickupAction, TransferAction
 from wrappers.observations import Observation, Unit
 
 
-# Controller class copied here since you won't have access to the luxai_s2 
+# Controller class copied here since you won't have access to the luxai_s2
 # package directly on the competition server
 class Controller:
     def __init__(self, action_space: spaces.Space) -> None:
@@ -30,6 +29,7 @@ class Controller:
         Generates a boolean action mask indicating in each discrete dimension whether it would be valid or not
         """
         raise NotImplementedError()
+
 
 class ControllerWrapper(Controller):
     def __init__(self, env_cfg: EnvConfig) -> None:
@@ -57,7 +57,7 @@ class ControllerWrapper(Controller):
 
         """
         self.env_cfg = env_cfg
-        
+
         # self.move_act_dims = 4
         # self.total_transferable_resource_types = 2 # ice, ore
         # self.transfer_act_dims = 5 * self.total_transferable_resource_types
@@ -72,7 +72,7 @@ class ControllerWrapper(Controller):
         # self.no_op_dim_high = self.dig_dim_high + self.no_op_dims
 
         # self.total_act_dims = self.no_op_dim_high
-        
+
         self.actions: List[Action] = []
         i = 0
         for action_cls in [MoveAction, TransferAction, PickupAction, DigAction]:
@@ -80,21 +80,24 @@ class ControllerWrapper(Controller):
             self.actions.append(action)
             action.update_id_range(i)
             i += action.dim
-        self.total_actions_per_unit = sum([action.dim for action in self.actions]) + 1 # no op
-        
+        self.total_actions_per_unit = (
+            sum([action.dim for action in self.actions]) + 1
+        )  # no op
+
         self.actions_per_factory = 4
         self.max_factories = OurEnvConfig.MAX_FACTORIES_IN_ACTION_SPACES
         self.max_units = OurEnvConfig.MAX_UNITS_IN_ACTION_SPACES
         action_space = spaces.MultiDiscrete(
-            [self.actions_per_factory]* self.max_factories + [self.total_actions_per_unit] * self.max_units
-        ) # shape = (n,)
-        
+            [self.actions_per_factory] * self.max_factories
+            + [self.total_actions_per_unit] * self.max_units
+        )  # shape = (n,)
+
         super().__init__(action_space)
 
     def action_to_lux_action(
-        self, 
-        agent: str, 
-        obs: Dict[str, Any], 
+        self,
+        agent: str,
+        obs: Dict[str, Any],
         action: npt.NDArray,
     ) -> Dict:
         """
@@ -104,31 +107,31 @@ class ControllerWrapper(Controller):
         shared_obs = observation_obj.player_0
         lux_action = dict()
         units = shared_obs.units.get_units_of_agent(agent)
-        for i, unit in enumerate(units[:self.max_units], start=self.max_factories):
+        for i, unit in enumerate(units[: self.max_units], start=self.max_factories):
             self.__unit_action(unit, action[i], lux_action)
-            
+
         factories = shared_obs.factories.get_factories_of_agent(agent)
-        for i, factory in enumerate(factories[:self.max_factories], start=0):
+        for i, factory in enumerate(factories[: self.max_factories], start=0):
             if action[i] == 3:
                 continue
             lux_action[factory.unit_id] = action[i]
 
         return lux_action
-    
+
     def __unit_action(
-        self, 
-        unit: Unit, 
-        id: int, 
+        self,
+        unit: Unit,
+        id: int,
         lux_action: Dict[str, Any],
     ) -> None:
         action_queue = []
-        
+
         for action_ctl in self.actions:
             action = action_ctl.get_action(id)
             if action is not None:
                 action_queue = [action]
                 break
-        
+
         # simple trick to help agents conserve power is to avoid updating the action queue
         # if the agent was previously trying to do that particular action already
         # if len(unit.action_queue) > 0 and len(action_queue) > 0:
