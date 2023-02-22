@@ -34,10 +34,6 @@ class Agent:
         np.random.seed(0)
         self.env_cfg: EnvConfig = env_cfg
         
-        _, _, observation_wrapper = make_env(
-            "LuxAI_S2-v0", 0, max_episode_steps=100,
-            returns_controller_observation=True
-        )()
         self.controller = ControllerWrapper(self.env_cfg)
 
         directory = osp.dirname(__file__)
@@ -54,11 +50,11 @@ class Agent:
     def init_sb3_model(self, model_path: str) -> None:
         env_id = "LuxAI_S2-v0"
         env, controller_wrapper, observation_wrapper = make_env(
-            env_id, 0, max_episode_steps=100,
+            env_id, 0, max_episode_steps=1000,
             returns_controller_observation=True
         )()
-        
         env.reset()
+        
         policy_kwargs = dict(
             features_extractor_class=CustomNet,
             features_extractor_kwargs=dict(

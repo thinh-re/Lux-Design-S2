@@ -13,9 +13,11 @@
             "justMyCode": true,
             "args": [
                 "kits/rl/sb3/main.py",
-                "kits/rl/sb3/main.py",
+                "kits/rl/raw_sb3/main.py",
                 "-v",
                 "2",
+                "-s",
+                "4",
                 "-o",
                 "replay.json"
             ],
