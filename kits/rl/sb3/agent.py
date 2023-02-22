@@ -19,6 +19,7 @@ from lux.config import EnvConfig
 from nn import load_policy
 from stable_baselines3.ppo import PPO
 from train_nn import CustomNet
+from luxai_s2.utils.heuristics.factory_placement import place_near_random_ice
 from wrappers import ControllerWrapper, ObservationWrapper
 
 # change this to use weights stored elsewhere
@@ -33,7 +34,7 @@ class Agent:
         self.opp_player = "player_1" if self.player == "player_0" else "player_0"
         np.random.seed(0)
         self.env_cfg: EnvConfig = env_cfg
-        
+
         self.controller = ControllerWrapper(self.env_cfg)
 
         directory = osp.dirname(__file__)
@@ -46,24 +47,23 @@ class Agent:
         #     controller_wrapper=self.controller,
         # )
         # self.policy.eval()
-        
+
     def init_sb3_model(self, model_path: str) -> None:
         env_id = "LuxAI_S2-v0"
         env, controller_wrapper, observation_wrapper = make_env(
-            env_id, 0, max_episode_steps=1000,
-            returns_controller_observation=True
+            env_id, 0, max_episode_steps=1000, returns_controller_observation=True
         )()
         env.reset()
-        
+
         policy_kwargs = dict(
             features_extractor_class=CustomNet,
             features_extractor_kwargs=dict(
                 # observation_space=observation_wrapper.observation_space, # do not need to specify observation_space since PPO automatically adds observation_space into CustomNet
                 action_space=controller_wrapper.action_space,
-                features_dim=256,    
+                features_dim=256,
             ),
         )
-        
+
         self.model = PPO(
             "MlpPolicy",
             env,
@@ -76,40 +76,41 @@ class Agent:
         return dict(faction="AlphaStrike", bid=0)
 
     def factory_placement_policy(self, step: int, obs, remainingOverageTime: int = 60):
-        if obs["teams"][self.player]["metal"] == 0:
-            return dict()
-        potential_spawns = list(zip(*np.where(obs["board"]["valid_spawns_mask"] == 1)))
-        potential_spawns_set = set(potential_spawns)
-        done_search = False
-        # if player == "player_1":
-        ice_diff = np.diff(obs["board"]["ice"])
-        pot_ice_spots = np.argwhere(ice_diff == 1)
-        if len(pot_ice_spots) == 0:
-            pot_ice_spots = potential_spawns
-        trials = 5
-        while trials > 0:
-            pos_idx = np.random.randint(0, len(pot_ice_spots))
-            pos = pot_ice_spots[pos_idx]
+        return place_near_random_ice(self.player, obs)
+        # if obs["teams"][self.player]["metal"] == 0:
+        #     return dict()
+        # potential_spawns = list(zip(*np.where(obs["board"]["valid_spawns_mask"] == 1)))
+        # potential_spawns_set = set(potential_spawns)
+        # done_search = False
+        # # if player == "player_1":
+        # ice_diff = np.diff(obs["board"]["ice"])
+        # pot_ice_spots = np.argwhere(ice_diff == 1)
+        # if len(pot_ice_spots) == 0:
+        #     pot_ice_spots = potential_spawns
+        # trials = 5
+        # while trials > 0:
+        #     pos_idx = np.random.randint(0, len(pot_ice_spots))
+        #     pos = pot_ice_spots[pos_idx]
 
-            area = 3
-            for x in range(area):
-                for y in range(area):
-                    check_pos = [pos[0] + x - area // 2, pos[1] + y - area // 2]
-                    if tuple(check_pos) in potential_spawns_set:
-                        done_search = True
-                        pos = check_pos
-                        break
-                if done_search:
-                    break
-            if done_search:
-                break
-            trials -= 1
-        spawn_loc = potential_spawns[np.random.randint(0, len(potential_spawns))]
-        if not done_search:
-            pos = spawn_loc
+        #     area = 3
+        #     for x in range(area):
+        #         for y in range(area):
+        #             check_pos = [pos[0] + x - area // 2, pos[1] + y - area // 2]
+        #             if tuple(check_pos) in potential_spawns_set:
+        #                 done_search = True
+        #                 pos = check_pos
+        #                 break
+        #         if done_search:
+        #             break
+        #     if done_search:
+        #         break
+        #     trials -= 1
+        # spawn_loc = potential_spawns[np.random.randint(0, len(potential_spawns))]
+        # if not done_search:
+        #     pos = spawn_loc
 
-        metal = obs["teams"][self.player]["metal"]
-        return dict(spawn=pos, metal=metal, water=metal)
+        # metal = obs["teams"][self.player]["metal"]
+        # return dict(spawn=pos, metal=metal, water=metal)
 
     def act(self, step: int, obs, remainingOverageTime: int = 60):
         # first convert observations using the same observation wrapper you used for training
@@ -139,11 +140,9 @@ class Agent:
         #     )
 
         action, _states = self.model.predict(obs, deterministic=True)
-        
+
         # use our controller which we trained with in train.py to generate a Lux S2 compatible action
-        lux_action = self.controller.action_to_lux_action(
-            self.player, raw_obs, action
-        )
+        lux_action = self.controller.action_to_lux_action(self.player, raw_obs, action)
 
         # commented code below adds watering lichen which can easily improve your agent
         # shared_obs = raw_obs[self.player]
