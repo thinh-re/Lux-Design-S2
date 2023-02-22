@@ -6,7 +6,7 @@ from lux.config import EnvConfig
 '''Convert observation dict to observation object
 for the sake of debugging
 
-observation_object = Observation(observation_dict)
+observation_object = Observation(observation_dict, env_cfg)
 '''
 
 class PlayerTeam:
@@ -327,18 +327,28 @@ class Units:
         ) for unit in units[:max_units]], axis=0)
 
 class Player:
-    def __init__(self, raw_player_obs: Dict[str, Any]) -> None:
+    def __init__(self, raw_player_obs: Dict[str, Any], env_cfg: EnvConfig) -> None:
         self.units = Units(raw_player_obs['units'])
         self.teams = Team(raw_player_obs['teams'])
         self.factories = Factories(raw_player_obs['factories'])
         self.board = Board(raw_player_obs['board'])
         self.real_env_steps: int = raw_player_obs['real_env_steps']
         self.global_id: int = raw_player_obs['global_id']
+        
+        self.env_cfg = env_cfg
+        
+    def real_env_steps_numpy_shape(env_cfg: EnvConfig) -> int:
+        return env_cfg.CYCLE_LENGTH
+        
+    def real_env_steps_numpy(self) -> np.ndarray:
+        rs = np.zeros(self.env_cfg.CYCLE_LENGTH)
+        rs[self.real_env_steps % self.env_cfg.CYCLE_LENGTH] = 1.0
+        return rs
 
 class Observation:
-    def __init__(self, raw_obs: Dict[str, Dict]) -> None:
-        self.player_0: Player = Player(raw_obs['player_0'])
-        self.player_1: Player = Player(raw_obs['player_1'])
+    def __init__(self, raw_obs: Dict[str, Dict], env_cfg: EnvConfig) -> None:
+        self.player_0: Player = Player(raw_obs['player_0'], env_cfg)
+        self.player_1: Player = Player(raw_obs['player_1'], env_cfg)
 
 class RobotState:
     def __init__(self, raw_robotstate: Dict[str, int]) -> None:

@@ -5,7 +5,7 @@ import numpy as np
 import numpy.typing as npt
 from gym import spaces
 from lux.config import EnvConfig
-from wrappers.observations import Factory, Observation, Board, Unit
+from wrappers.observations import Factory, Observation, Board, Player, Unit
 from config import OurEnvConfig
 
 
@@ -25,9 +25,11 @@ class ObservationWrapper(gym.ObservationWrapper):
 
     def __init__(self, env: gym.Env) -> None:
         super().__init__(env)
+        self.env_cfg: EnvConfig = env.env_cfg
         # np.product(Board.numpy_shape)
         self.observation_size = OurEnvConfig.MAX_FACTORIES_IN_OBSERVATION * Factory.numpy_shape * 2 \
-            + OurEnvConfig.MAX_UNITS_IN_OBSERVATION * Unit.numpy_shape(OurEnvConfig.MAX_ACTIONS_PER_UNIT_IN_OBSERVATION) * 2
+            + OurEnvConfig.MAX_UNITS_IN_OBSERVATION * Unit.numpy_shape(OurEnvConfig.MAX_ACTIONS_PER_UNIT_IN_OBSERVATION) * 2 \
+            + Player.real_env_steps_numpy_shape(self.env_cfg)
         self.observation_space = spaces.Box(
             -9999, 9999, shape=(self.observation_size,)
         )
@@ -55,7 +57,7 @@ class ObservationWrapper(gym.ObservationWrapper):
                     'player_1': array([...]),
                 }
         """
-        observation_obj = Observation(obs)
+        observation_obj = Observation(obs, env_cfg)
         mapped_observation = dict()
         
         # since both players observe the same game state
@@ -70,6 +72,8 @@ class ObservationWrapper(gym.ObservationWrapper):
         # Assume we are "player_0"
         our_factory_map = np.array([factory.pos for factory in observation_obj.player_0.factories.player_0_factories])
         opponent_factory_map = np.array([factory.pos for factory in observation_obj.player_0.factories.player_1_factories])
+        
+        real_env_steps_numpy = observation_player.real_env_steps_numpy()
         
         for agent in obs.keys():
             # board = observation_player.board.numpy()
@@ -86,6 +90,7 @@ class ObservationWrapper(gym.ObservationWrapper):
                 env_config=env_cfg,
             )
             mapped_observation[agent] = np.concatenate([
+                real_env_steps_numpy,
                 # board.reshape(-1), 
                 factories.reshape(-1),
                 units.reshape(-1)

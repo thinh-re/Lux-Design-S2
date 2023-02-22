@@ -6,7 +6,7 @@ import numpy as np
 from lux.team import Team
 from wrappers.controllers_wrapper import ControllerWrapper
 from wrappers.obs_wrappers import ObservationWrapper
-from wrappers.observations import State
+from wrappers.observations import State, Units
 
 from luxai_s2.state.state import State as GameState
 
@@ -22,7 +22,7 @@ class CustomEnvWrapper(gym.Wrapper):
         self.prev_step_metrics = None
         self.env: ObservationWrapper
         
-        self.max_states: int = 5
+        self.max_states: int = 2
         self.prev_states: List[State] = []
         self.prev_game_states: List[GameState] = []
 
@@ -68,18 +68,20 @@ class CustomEnvWrapper(gym.Wrapper):
         self.__reset_game_states(current_game_state)
         
         # self.__check_useless_actions(action, current_state)
+        
+        if done:
+            reward = 0.
+            return obs, reward, done, self.__info(current_state)
 
-        if len(self.prev_states) > 0:
-            prev_state = self.prev_states[-1]
-            team: Team = current_game_state.teams[agent]
-            reward = self.reward_function(
-                current_game_state,
-                current_state, 
-                prev_state, 
-                team.factories_to_place,
-            )
-        else:
-            reward = 0
+        prev_state: Optional[State] = self.prev_states[-1] if len(self.prev_states) > 0 else None
+        team: Team = current_game_state.teams[agent]
+        reward = self.reward_function(
+            agent,
+            current_game_state,
+            current_state, 
+            prev_state, 
+            team.factories_to_place,
+        )
         
         self.__backup_game_states(current_game_state, current_state)
         return obs, reward, done, self.__info(current_state)
@@ -107,22 +109,25 @@ class CustomEnvWrapper(gym.Wrapper):
             # set enemy factories to have 1000 water to keep them alive the whole around and treat the game as single-agent
             factory.cargo.water = 1000
     
-    def __consumption_state(self, s: State) -> np.ndarray:
-        return np.array([
-            # Ice
-            s.consumption.ice.HEAVY + s.consumption.ice.LIGHT,
-            
-            # Metal
-            s.consumption.metal,
-            
-            # Ore
-            s.consumption.ore.HEAVY + s.consumption.ore.LIGHT,
-            
-            # Power
-            s.consumption.power.HEAVY + \
-                s.consumption.power.LIGHT + \
-                s.consumption.power.FACTORY,
-        ])
+    def __consumption_state(self, s: Optional[State]) -> np.ndarray:
+        if s is not None:
+            return np.array([
+                # Ice
+                s.consumption.ice.HEAVY + s.consumption.ice.LIGHT,
+                
+                # Metal
+                s.consumption.metal,
+                
+                # Ore
+                s.consumption.ore.HEAVY + s.consumption.ore.LIGHT,
+                
+                # Power
+                s.consumption.power.HEAVY + \
+                    s.consumption.power.LIGHT + \
+                    s.consumption.power.FACTORY,
+            ])
+        else:
+            return np.array([0., 0., 0., 0.])
         
     def __info(self, current_state: State) -> Dict[str, float]:
         info = dict()
@@ -152,28 +157,31 @@ class CustomEnvWrapper(gym.Wrapper):
         prev_state_np = self.__consumption_state(prev_state)
         return np.sum(prev_state_np - current_state_np) / 100
     
-    def __destroyed_state(self, s: State) -> np.ndarray:
-        return np.array([
-            # Factory
-            s.destroyed.FACTORY,
-            
-            # Heavy robots
-            s.destroyed.HEAVY,
-            
-            # Light robots
-            s.destroyed.LIGHT,
-            
-            # Lichen
-            s.destroyed.lichen.HEAVY + s.destroyed.lichen.LIGHT,
-            
-            # Rubble
-            s.destroyed.rubble.HEAVY + s.destroyed.rubble.LIGHT,
-        ])
+    def __destroyed_state(self, s: Optional[State]) -> np.ndarray:
+        if s is not None:
+            return np.array([
+                # Factory
+                s.destroyed.FACTORY,
+                
+                # Heavy robots
+                s.destroyed.HEAVY,
+                
+                # Light robots
+                s.destroyed.LIGHT,
+                
+                # Lichen
+                s.destroyed.lichen.HEAVY + s.destroyed.lichen.LIGHT,
+                
+                # Rubble
+                s.destroyed.rubble.HEAVY + s.destroyed.rubble.LIGHT,
+            ])
+        else:
+            return np.array([0., 0., 0., 0., 0.])
         
     def __destroyed_reward(
         self, 
         current_state: State, 
-        prev_state: State,
+        prev_state: Optional[State],
         factories_to_place: int,
     ) -> float:
         current_state_np = self.__destroyed_state(current_state)
@@ -187,39 +195,48 @@ class CustomEnvWrapper(gym.Wrapper):
         ])
         return np.sum((prev_state_np - current_state_np) * ratio)
     
-    def __generation_state(self, s: State) -> np.ndarray:
-        return np.array([
-            # Ice
-            s.generation.ice.HEAVY + s.generation.ice.LIGHT,
-            
-            # Metal
-            s.generation.metal,
-            
-            # Ore
-            s.generation.ore.HEAVY + s.generation.ore.LIGHT,
-            
-            # Power
-            s.generation.power.HEAVY + \
-                s.generation.power.LIGHT + \
-                s.generation.power.FACTORY,
-            
-            # Lichen
-            s.generation.lichen,
-            
-            # Water
-            s.generation.water,
-            
-            # Heavy robots
-            s.generation.build.HEAVY,
-            
-            # Light robots
-            s.generation.build.LIGHT,
-        ])
+    def __generation_state(self, s: Optional[State]) -> np.ndarray:
+        if s is not None:
+            return np.array([
+                # Ice
+                s.generation.ice.HEAVY + s.generation.ice.LIGHT,
+                
+                # Metal
+                s.generation.metal,
+                
+                # Ore
+                s.generation.ore.HEAVY + s.generation.ore.LIGHT,
+                
+                # Power
+                s.generation.power.HEAVY + \
+                    s.generation.power.LIGHT + \
+                    s.generation.power.FACTORY,
+                
+                # Lichen
+                s.generation.lichen,
+                
+                # Water
+                s.generation.water,
+                
+                # Heavy robots
+                s.generation.build.HEAVY,
+                
+                # Light robots
+                s.generation.build.LIGHT,
+            ])
+        else:
+            return np.array([0., 0., 0., 0., 0., 0., 0., 0.])
+        
+    def __spawning_robots_reward(self, agent: str, game_state: GameState) -> float:
+        if len(game_state.units[agent].keys()) == 0:
+            return -0.1
+        else:
+            return 0.
 
     def __generation_reward(
         self, 
         current_state: State, 
-        prev_state: State,
+        prev_state: Optional[State],
     ) -> float:
         current_state_np = self.__generation_state(current_state)
         prev_state_np = self.__generation_state(prev_state)
@@ -234,34 +251,48 @@ class CustomEnvWrapper(gym.Wrapper):
             0., # light robots
         ])
         return np.sum((current_state_np - prev_state_np) * ratio)
+    
+    def __updates_reward(self, current_state: State, prev_state: Optional[State]) -> float:
+        """Encourage successful updates, penalizing failed updates
+
+        Args:
+            current_state (State): current state
+            prev_state (Optional[State]): previous state before updating
+
+        Returns:
+            float: reward
+        """
+        if prev_state is None:
+            new_updates = current_state.action_queue_updates_total
+            successful_updates = current_state.action_queue_updates_success
+        else:
+            new_updates = current_state.action_queue_updates_total - prev_state.action_queue_updates_total
+            successful_updates = current_state.action_queue_updates_success - prev_state.action_queue_updates_success
+        failed_updates = new_updates - successful_updates
+        return - failed_updates * 1e-5
+    
 
     def reward_function(
-        self, 
+        self,
+        agent: str,
         current_game_state: GameState,
         current_state: State, 
-        prev_state: State, 
+        prev_state: Optional[State],
         factories_to_place: int,
     ) -> float:
         # consumption_reward = self.__consumption_reward(current_state, prev_state)
         destroyed_reward = self.__destroyed_reward(current_state, prev_state, factories_to_place)
         generation_reward = self.__generation_reward(current_state, prev_state)
+        updates_reward = self.__updates_reward(current_state, prev_state)
+        spawning_robots_reward = self.__spawning_robots_reward(agent, current_game_state)
         
-        # encourage successful actions
-        new_updates = current_state.action_queue_updates_total - prev_state.action_queue_updates_total
-        successful_updates = current_state.action_queue_updates_success - current_state.action_queue_updates_success
-        failed_updates = new_updates - successful_updates
-        updates_reward = - failed_updates * 1e-5
-        
-        # if generation_reward > 0:
-        #     pass
-
         rewards = sum([
             # consumption_reward,
             destroyed_reward,
             generation_reward,
             updates_reward
             # TODO: rewards for pickup, transfer
-        ]) + 1e-5
+        ]) + 1e-5 + spawning_robots_reward
         # print(current_game_state.real_env_steps, ':', 
         #       destroyed_reward, updates_reward, generation_reward, rewards)
         return rewards

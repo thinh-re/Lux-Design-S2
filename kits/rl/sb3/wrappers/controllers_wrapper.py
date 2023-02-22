@@ -100,7 +100,7 @@ class ControllerWrapper(Controller):
         """
         Returns: {'factory_0': 0 or 1 or 2}
         """
-        observation_obj = Observation(obs)
+        observation_obj = Observation(obs, self.env_cfg)
         shared_obs = observation_obj.player_0
         lux_action = dict()
         units = shared_obs.units.get_units_of_agent(agent)

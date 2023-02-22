@@ -64,7 +64,7 @@ class Agent:
             features_extractor_kwargs=dict(
                 # observation_space=observation_wrapper.observation_space, # do not need to specify observation_space since PPO automatically adds observation_space into CustomNet
                 action_space=controller_wrapper.action_space,
-                features_dim=128,    
+                features_dim=256,    
             ),
         )
         
