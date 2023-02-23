@@ -2,9 +2,11 @@ from typing import Tuple, Union
 
 import gym
 from gym.wrappers import TimeLimit
+from sb3_contrib.common.wrappers import ActionMasker
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.utils import set_random_seed
 from wrappers import ControllerWrapper, CustomEnvWrapper, ObservationWrapper
+from wrappers.controllers_wrapper import mask_fn
 from wrappers.sb3_wrapper import SB3Wrapper
 
 from luxai_s2.env import LuxAI_S2
@@ -33,6 +35,7 @@ def make_env(
         # max factories set to 2 for simplification and keeping returns consistent
         # as we survive longer if there are more initial resources
         env: LuxAI_S2 = gym.make(env_id, verbose=0, collect_stats=True, MAX_FACTORIES=2)
+        # env = ActionMasker(env, mask_fn)
 
         controller_wrapper = ControllerWrapper(env.env_cfg)
 

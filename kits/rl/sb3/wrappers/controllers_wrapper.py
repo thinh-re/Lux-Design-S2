@@ -1,12 +1,81 @@
 from typing import Any, Dict, List
 
+import gym
 import numpy as np
 import numpy.typing as npt
 from config import OurEnvConfig
 from gym import spaces
 from lux.config import EnvConfig
+from lux.factory import Factory
+from lux.kit import GameState, obs_to_game_state
 from wrappers.actions import Action, DigAction, MoveAction, PickupAction, TransferAction
 from wrappers.observations import Observation, Unit
+
+
+def get_valid_actions_of_factory(
+    factory: Factory,
+    game_state: GameState,
+    env_cfg: EnvConfig,
+) -> List[int]:
+    valid_actions: List[int] = []
+
+    # is there enough resource to build LIGHT robot
+    if (
+        factory.cargo.metal >= env_cfg.ROBOTS["LIGHT"].METAL_COST
+        and factory.power >= env_cfg.ROBOTS["LIGHT"].POWER_COST
+    ):
+        valid_actions.append(0)
+
+    # is there enough resource to build HEAVY robot
+    if (
+        factory.cargo.metal >= env_cfg.ROBOTS["HEAVY"].METAL_COST
+        and factory.power >= env_cfg.ROBOTS["HEAVY"].POWER_COST
+    ):
+        valid_actions.append(1)
+
+    # is it okay to water?
+    # TODO:
+    valid_actions.append(2)
+
+    return valid_actions
+
+
+def get_valid_actions_of_units(
+    agent: str, unit: Unit, game_state: GameState, env_cfg: EnvConfig
+) -> List[int]:
+    valid_actions: List[int] = []
+
+
+def get_valid_actions_of_agent(
+    agent: str,
+    game_state: GameState,
+    env_cfg: EnvConfig,
+) -> np.ndarray:
+    valid_actions: List[List[int]] = []
+
+    for _, factory in zip(
+        range(OurEnvConfig.MAX_FACTORIES_IN_ACTION_SPACES),
+        game_state.factories[agent].values(),
+    ):
+        valid_actions.append(
+            get_valid_actions_of_factory(
+                factory,
+                game_state,
+                env_cfg,
+            )
+        )
+
+    for _, unit in zip(
+        range(OurEnvConfig.MAX_ACTIONS_PER_UNIT_IN_ACTION_SPACES),
+        game_state.units[agent].values(),
+    ):
+        pass
+
+
+def mask_fn(env: gym.Env) -> np.ndarray:
+    game_state: GameState = env.env.state
+    env_cfg = env.env_cfg
+    return np.array([])
 
 
 # Controller class copied here since you won't have access to the luxai_s2
@@ -57,22 +126,6 @@ class ControllerWrapper(Controller):
 
         """
         self.env_cfg = env_cfg
-
-        # self.move_act_dims = 4
-        # self.total_transferable_resource_types = 2 # ice, ore
-        # self.transfer_act_dims = 5 * self.total_transferable_resource_types
-        # self.pickup_act_dims = 1
-        # self.dig_act_dims = 1
-        # self.no_op_dims = 1
-
-        # self.move_dim_high = self.move_act_dims
-        # self.transfer_dim_high = self.move_dim_high + self.transfer_act_dims
-        # self.pickup_dim_high = self.transfer_dim_high + self.pickup_act_dims
-        # self.dig_dim_high = self.pickup_dim_high + self.dig_act_dims
-        # self.no_op_dim_high = self.dig_dim_high + self.no_op_dims
-
-        # self.total_act_dims = self.no_op_dim_high
-
         self.actions: List[Action] = []
         i = 0
         for action_cls in [MoveAction, TransferAction, PickupAction, DigAction]:
@@ -103,14 +156,13 @@ class ControllerWrapper(Controller):
         """
         Returns: {'factory_0': 0 or 1 or 2}
         """
-        observation_obj = Observation(obs, self.env_cfg)
-        shared_obs = observation_obj.player_0
+        game_state = obs_to_game_state(self.env_cfg, obs)
         lux_action = dict()
-        units = shared_obs.units.get_units_of_agent(agent)
+        units = game_state.units_lst(agent)
         for i, unit in enumerate(units[: self.max_units], start=self.max_factories):
             self.__unit_action(unit, action[i], lux_action)
 
-        factories = shared_obs.factories.get_factories_of_agent(agent)
+        factories = game_state.factories_lst(agent)
         for i, factory in enumerate(factories[: self.max_factories], start=0):
             if action[i] == 3:
                 continue
@@ -132,12 +184,6 @@ class ControllerWrapper(Controller):
                 action_queue = [action]
                 break
 
-        # simple trick to help agents conserve power is to avoid updating the action queue
-        # if the agent was previously trying to do that particular action already
-        # if len(unit.action_queue) > 0 and len(action_queue) > 0:
-        #     same_actions = (unit.action_queue[0] == action_queue[0]).all()
-        #     if same_actions:
-        #         no_op = True
         if len(action_queue) > 0:
             lux_action[unit.unit_id] = action_queue
 
@@ -148,7 +194,6 @@ class ControllerWrapper(Controller):
 
         Doesn't account for whether robot has enough power
         """
-
         # compute a factory occupancy map that will be useful for checking if a board tile
         # has a factory and which team's factory it is.
         shared_obs = obs[agent]

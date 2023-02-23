@@ -37,9 +37,8 @@ class CustomEnvWrapper(gym.Wrapper):
 
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, float, bool, Dict]:
         """
-
         Args:
-            action (np.ndarray): see SimpleUnitDiscreteController.action_space
+            action (np.ndarray): see ControllerWrapper.action_space
 
         Returns:
             Tuple[np.ndarray, float, bool, Dict]: obs, reward, done, info
@@ -64,8 +63,11 @@ class CustomEnvWrapper(gym.Wrapper):
         # submit actions for just one agent to make it single-agent
         # and save single-agent versions of the data below
         action = {agent: action}
-        # this will call SimpleUnitDiscreteController.action_to_lux_action and then LuxAI_S2.step()
+        
+        # this will call ControllerWrapper.action_to_lux_action(...)
+        # and then LuxAI_S2.step(...)
         obs, _, done, _ = self.env.step(action)
+        
         obs = obs[agent]
         done = done[agent]
 
@@ -360,8 +362,8 @@ class CustomEnvWrapper(gym.Wrapper):
                     # consumption_reward,
                     destroyed_reward,
                     generation_reward,
-                    updates_reward,
-                    useless_actions_reward
+                    # updates_reward,
+                    # useless_actions_reward
                     # TODO: rewards for pickup, transfer
                 ]
             )

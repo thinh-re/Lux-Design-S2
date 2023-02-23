@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Any, Dict, List
+from collections import OrderedDict
 
 import numpy as np
 
@@ -67,57 +68,6 @@ def process_obs(player, game_state, step, obs):
     return game_state
 
 
-def obs_to_game_state(step, env_cfg: EnvConfig, obs):
-    units = dict()
-    for agent in obs["units"]:
-        units[agent] = dict()
-        for unit_id in obs["units"][agent]:
-            unit_data = obs["units"][agent][unit_id]
-            cargo = UnitCargo(**unit_data["cargo"])
-            unit = Unit(
-                **unit_data,
-                unit_cfg=env_cfg.ROBOTS[unit_data["unit_type"]],
-                env_cfg=env_cfg
-            )
-            unit.cargo = cargo
-            units[agent][unit_id] = unit
-
-    factory_occupancy_map = np.ones_like(obs["board"]["rubble"], dtype=int) * -1
-    factories = dict()
-    for agent in obs["factories"]:
-        factories[agent] = dict()
-        for unit_id in obs["factories"][agent]:
-            f_data = obs["factories"][agent][unit_id]
-            cargo = UnitCargo(**f_data["cargo"])
-            factory = Factory(**f_data, env_cfg=env_cfg)
-            factory.cargo = cargo
-            factories[agent][unit_id] = factory
-            factory_occupancy_map[factory.pos_slice] = factory.strain_id
-    teams = dict()
-    for agent in obs["teams"]:
-        team_data = obs["teams"][agent]
-        faction = FactionTypes[team_data["faction"]]
-        teams[agent] = Team(**team_data, agent=agent)
-
-    return GameState(
-        env_cfg=env_cfg,
-        env_steps=step,
-        board=Board(
-            rubble=obs["board"]["rubble"],
-            ice=obs["board"]["ice"],
-            ore=obs["board"]["ore"],
-            lichen=obs["board"]["lichen"],
-            lichen_strains=obs["board"]["lichen_strains"],
-            factory_occupancy_map=factory_occupancy_map,
-            factories_per_team=obs["board"]["factories_per_team"],
-            valid_spawns_mask=obs["board"]["valid_spawns_mask"],
-        ),
-        units=units,
-        factories=factories,
-        teams=teams,
-    )
-
-
 @dataclass
 class Board:
     rubble: np.ndarray
@@ -137,10 +87,10 @@ class GameState:
     """
 
     env_steps: int
-    env_cfg: dict
+    env_cfg: EnvConfig
     board: Board
-    units: Dict[str, Dict[str, Unit]] = field(default_factory=dict)
-    factories: Dict[str, Dict[str, Factory]] = field(default_factory=dict)
+    units: Dict[str, OrderedDict[str, Unit]] = field(default_factory=OrderedDict)
+    factories: Dict[str, OrderedDict[str, Factory]] = field(default_factory=OrderedDict)
     teams: Dict[str, Team] = field(default_factory=dict)
 
     @property
@@ -154,6 +104,77 @@ class GameState:
         else:
             return self.env_steps
 
+    def set_env_steps(self, real_env_steps: int):
+        if self.env_cfg.BIDDING_SYSTEM:
+            # + 1 for extra factory placement and + 1 for bidding step
+            self.env_steps = real_env_steps + (self.board.factories_per_team * 2 + 1)
+        else:
+            self.env_steps = real_env_steps
+
+    def units_lst(self, agent: str) -> List[Unit]:
+        return list(self.units[agent].values())
+    
+    def factories_lst(self, agent: str) -> List[Unit]:
+        return list(self.factories[agent].values())
+
     # various utility functions
     def is_day(self):
         return self.real_env_steps % self.env_cfg.CYCLE_LENGTH < self.env_cfg.DAY_LENGTH
+
+
+def obs_to_game_state(env_cfg: EnvConfig, obs: Dict[str, Any]) -> GameState:
+    if "player_0" in obs and "player_1" in obs:
+        obs = obs["player_0"]
+
+    real_env_steps = obs["real_env_steps"]
+
+    units = OrderedDict()
+    for agent in obs["units"]:
+        units[agent] = dict()
+        for unit_id in obs["units"][agent]:
+            unit_data = obs["units"][agent][unit_id]
+            cargo = UnitCargo(**unit_data["cargo"])
+            unit = Unit(
+                **unit_data,
+                unit_cfg=env_cfg.ROBOTS[unit_data["unit_type"]],
+                env_cfg=env_cfg
+            )
+            unit.cargo = cargo
+            units[agent][unit_id] = unit
+
+    factory_occupancy_map = np.ones_like(obs["board"]["rubble"], dtype=int) * -1
+    factories = OrderedDict()
+    for agent in obs["factories"]:
+        factories[agent] = dict()
+        for unit_id in obs["factories"][agent]:
+            f_data = obs["factories"][agent][unit_id]
+            cargo = UnitCargo(**f_data["cargo"])
+            factory = Factory(**f_data, env_cfg=env_cfg)
+            factory.cargo = cargo
+            factories[agent][unit_id] = factory
+            factory_occupancy_map[factory.pos_slice] = factory.strain_id
+    teams = dict()
+    for agent in obs["teams"]:
+        team_data = obs["teams"][agent]
+        faction = FactionTypes[team_data["faction"]]
+        teams[agent] = Team(**team_data, agent=agent)
+
+    game_state = GameState(
+        env_cfg=env_cfg,
+        env_steps=0,
+        board=Board(
+            rubble=obs["board"]["rubble"],
+            ice=obs["board"]["ice"],
+            ore=obs["board"]["ore"],
+            lichen=obs["board"]["lichen"],
+            lichen_strains=obs["board"]["lichen_strains"],
+            factory_occupancy_map=factory_occupancy_map,
+            factories_per_team=obs["board"]["factories_per_team"],
+            valid_spawns_mask=obs["board"]["valid_spawns_mask"],
+        ),
+        units=units,
+        factories=factories,
+        teams=teams,
+    )
+    game_state.set_env_steps(real_env_steps)
+    return game_state

@@ -10,6 +10,7 @@ import os.path as osp
 import torch as th
 from argparser import TrainArgumentParser
 from game_env import make_env
+from sb3_contrib.ppo_mask import MaskablePPO
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
