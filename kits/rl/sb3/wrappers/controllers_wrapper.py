@@ -9,7 +9,7 @@ from lux.config import EnvConfig
 from lux.factory import Factory
 from lux.kit import GameState, obs_to_game_state
 from wrappers.actions import Action, DigAction, MoveAction, PickupAction, TransferAction
-from wrappers.observations import Observation, Unit
+from wrappers.observations import Unit
 
 
 def get_valid_actions_of_factory(
