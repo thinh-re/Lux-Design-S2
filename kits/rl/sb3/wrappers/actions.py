@@ -3,9 +3,8 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 from lux.config import EnvConfig
+from lux.kit import GameState
 from wrappers.observations import Factory, Unit
-
-from luxai_s2.state.state import State as GameState
 
 FACTORY_AREA = [
     np.array([0, 0]),

@@ -3,13 +3,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import gym
 import numpy as np
+from lux.kit import GameState
 from lux.team import Team
 from wrappers.actions import Action, CheckUselessActionInput
 from wrappers.controllers_wrapper import ControllerWrapper
 from wrappers.obs_wrappers import ObservationWrapper
-from wrappers.observations import Observation, Player, State, Unit, Units
-
-from luxai_s2.state.state import State as GameState
+from wrappers.observations import Observation, State, Unit
 
 
 def find_unit(agent: str, key: str, units: List[Unit]) -> Unit:
@@ -63,11 +62,11 @@ class CustomEnvWrapper(gym.Wrapper):
         # submit actions for just one agent to make it single-agent
         # and save single-agent versions of the data below
         action = {agent: action}
-        
+
         # this will call ControllerWrapper.action_to_lux_action(...)
         # and then LuxAI_S2.step(...)
         obs, _, done, _ = self.env.step(action)
-        
+
         obs = obs[agent]
         done = done[agent]
 
