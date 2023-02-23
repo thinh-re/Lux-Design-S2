@@ -22,10 +22,12 @@ def make_env(
     returns_controller_observation=False,
     is_random_policy=False,
 ):
-    def _init() -> Union[
-        LuxAI_S2,
-        Tuple[LuxAI_S2, ControllerWrapper, ObservationWrapper],
-    ]:
+    def _init() -> (
+        Union[
+            LuxAI_S2,
+            Tuple[LuxAI_S2, ControllerWrapper, ObservationWrapper],
+        ]
+    ):
         # verbose = 0
         # collect stats so we can create reward functions
         # max factories set to 2 for simplification and keeping returns consistent

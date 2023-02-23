@@ -19,17 +19,17 @@ class CustomNet(BaseFeaturesExtractor):
     """
 
     def __init__(
-        self, 
-        observation_space: spaces.Box, # SimpleUnitObservationWrapper.observation_space
-        action_space: spaces.MultiDiscrete, # SimpleUnitDiscreteController.action_space
+        self,
+        observation_space: spaces.Box,  # SimpleUnitObservationWrapper.observation_space
+        action_space: spaces.MultiDiscrete,  # SimpleUnitDiscreteController.action_space
         features_dim: int = 128,
     ):
         super().__init__(observation_space, features_dim)
         self.action_dims: int = action_space.shape[0]
         self.observation_space_shape: int = observation_space.shape[0]
-        
+
         # Board
-        self.c, self.h, self.w = Board.numpy_shape # (6, 48, 48)
+        self.c, self.h, self.w = Board.numpy_shape  # (6, 48, 48)
         self.board_region: int = self.c * self.h * self.w
         # self.cnn = nn.Sequential(
         #     nn.BatchNorm2d(self.c),
@@ -46,12 +46,12 @@ class CustomNet(BaseFeaturesExtractor):
         #         # th.as_tensor(observation_space.sample()[None]).float()
         #         th.randn((1, self.c, self.h, self.w))
         #     ).shape[1]
-            
+
         # self.linear = nn.Sequential(
-        #     nn.Linear(n_flatten, features_dim), 
+        #     nn.Linear(n_flatten, features_dim),
         #     nn.ReLU(),
         # )
-        
+
         # self.n_others = self.observation_space_shape - self.board_region
         # self.mlp = nn.Sequential(
         #     nn.BatchNorm1d(self.n_others),
@@ -60,23 +60,26 @@ class CustomNet(BaseFeaturesExtractor):
         #     nn.Linear(features_dim, features_dim),
         #     nn.Tanh(),
         # )
-        
+
         # self.final = nn.Sequential(
         #     nn.Linear(features_dim*2, features_dim),
         #     nn.Tanh(),
         # )
-        
+
         self.mlp = nn.Sequential(
-            nn.Linear(self.observation_space_shape, features_dim*2),
+            nn.Linear(self.observation_space_shape, features_dim * 2),
             nn.Tanh(),
-            nn.Linear(features_dim*2, features_dim),
+            nn.Linear(features_dim * 2, features_dim),
             nn.Tanh(),
             nn.Linear(features_dim, features_dim),
             nn.Tanh(),
         )
-        print('self.observation_space_shape', self.observation_space_shape, file=sys.stderr)
-        print('No. parameters:', count_parameters(self), file=sys.stderr)
-    
+        print(
+            "self.observation_space_shape",
+            self.observation_space_shape,
+            file=sys.stderr,
+        )
+        print("No. parameters:", count_parameters(self), file=sys.stderr)
 
     # def forward(self, x: th.Tensor) -> th.Tensor:
     #     board = x[:, :self.board_region].reshape((-1, self.c, self.h, self.w))
@@ -84,13 +87,14 @@ class CustomNet(BaseFeaturesExtractor):
 
     #     others = x[:, self.board_region:]
     #     others = self.mlp(others)
-        
+
     #     rs = th.cat([board, others], axis=1)
     #     rs = self.final(rs)
     #     return rs
 
     def forward(self, x: th.Tensor) -> th.Tensor:
         return self.mlp(x)
+
 
 # TODO:
 # ref: https://stable-baselines3.readthedocs.io/en/master/guide/custom_policy.html
@@ -113,7 +117,7 @@ class CustomNet(BaseFeaturesExtractor):
 #         )
 
 #     def forward(self, observations: Dict) -> th.Tensor:
-        
+
 #         encoded_tensor_list = []
 
 #         # self.extractors contain nn.Modules that do all the processing.

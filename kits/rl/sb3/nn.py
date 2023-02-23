@@ -13,20 +13,21 @@ from wrappers.obs_wrappers import ObservationWrapper
 from wrappers.observations import Board
 from wrappers.controllers_wrapper import ControllerWrapper
 
+
 class Net(nn.Module):
     def __init__(
-        self, 
-        observation_space: spaces.Box, # SimpleUnitObservationWrapper.observation_space
-        action_space: spaces.MultiDiscrete, # SimpleUnitDiscreteController.action_space
+        self,
+        observation_space: spaces.Box,  # SimpleUnitObservationWrapper.observation_space
+        action_space: spaces.MultiDiscrete,  # SimpleUnitDiscreteController.action_space
         features_dim: int = 128,
     ):
         super(Net, self).__init__()
         self.features_dim = features_dim
         self.action_dims: int = action_space.shape[0]
         self.observation_space_shape: int = observation_space.shape[0]
-        
+
         # Board
-        self.c, self.h, self.w = Board.numpy_shape # (6, 48, 48)
+        self.c, self.h, self.w = Board.numpy_shape  # (6, 48, 48)
         self.board_region: int = self.c * self.h * self.w
         self.cnn = nn.Sequential(
             nn.Conv2d(self.c, 32, kernel_size=8, stride=4, padding=0),
@@ -42,12 +43,12 @@ class Net(nn.Module):
                 # th.as_tensor(observation_space.sample()[None]).float()
                 th.randn((1, self.c, self.h, self.w))
             ).shape[1]
-            
+
         self.linear = nn.Sequential(
-            nn.Linear(n_flatten, features_dim), 
+            nn.Linear(n_flatten, features_dim),
             nn.ReLU(),
         )
-        
+
         self.n_others = self.observation_space_shape - self.board_region
         self.mlp = nn.Sequential(
             nn.Linear(self.n_others, features_dim),
@@ -55,13 +56,13 @@ class Net(nn.Module):
             nn.Linear(features_dim, features_dim),
             nn.Tanh(),
         )
-        
+
         self.final = nn.Sequential(
-            nn.Linear(features_dim*2, features_dim),
+            nn.Linear(features_dim * 2, features_dim),
             nn.Tanh(),
         )
         # print('No. parameters:', count_parameters(self))
-        
+
         self.action_net = nn.Sequential(
             nn.Linear(features_dim, self.action_dims),
         )
@@ -77,17 +78,22 @@ class Net(nn.Module):
             return dist.mode
 
     def forward(self, x: th.Tensor) -> th.Tensor:
-        board = x[:, :self.board_region].reshape((-1, self.c, self.h, self.w))
+        board = x[:, : self.board_region].reshape((-1, self.c, self.h, self.w))
         board = self.linear(self.cnn(board))
 
-        others = x[:, self.board_region:]
+        others = x[:, self.board_region :]
         others = self.mlp(others)
-        
+
         rs = th.cat([board, others], axis=1)
         rs = self.final(rs)
         return rs
 
-def load_policy(model_path: str, observation_wrapper: ObservationWrapper, controller_wrapper: ControllerWrapper) -> Net:
+
+def load_policy(
+    model_path: str,
+    observation_wrapper: ObservationWrapper,
+    controller_wrapper: ControllerWrapper,
+) -> Net:
     # load .pth or .zip
     if model_path[-4:] == ".zip":
         with zipfile.ZipFile(model_path) as archive:
@@ -106,7 +112,7 @@ def load_policy(model_path: str, observation_wrapper: ObservationWrapper, contro
     )
     loaded_state_dict = {}
 
-    # this code here works assuming the first keys in the sb3 state dict 
+    # this code here works assuming the first keys in the sb3 state dict
     # are aligned with the ones you define above in Net
     for sb3_key, model_key in zip(sb3_state_dict.keys(), model.state_dict().keys()):
         loaded_state_dict[model_key] = sb3_state_dict[sb3_key]
