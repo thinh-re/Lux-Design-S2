@@ -52,7 +52,8 @@ class SB3Wrapper(gym.Wrapper):
         self.controller = controller
         self.action_space = controller.action_space
 
-        # The simplified wrapper removes the first two phases of the game by using predefined policies (trained or heuristic)
+        # The simplified wrapper removes the first two phases of 
+        # the game by using predefined policies (trained or heuristic)
         # to handle those two phases during each reset
         if factory_placement_policy is None:
 
