@@ -35,7 +35,7 @@ def make_env(
         # max factories set to 2 for simplification and keeping returns consistent
         # as we survive longer if there are more initial resources
         env: LuxAI_S2 = gym.make(env_id, verbose=0, collect_stats=True, MAX_FACTORIES=2)
-        # env = ActionMasker(env, mask_fn)
+        env = ActionMasker(env, mask_fn)
 
         controller_wrapper = ControllerWrapper(env.env_cfg)
 

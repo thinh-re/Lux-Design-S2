@@ -75,7 +75,12 @@ def get_valid_actions_of_agent(
 def mask_fn(env: gym.Env) -> np.ndarray:
     game_state: GameState = env.env.state
     env_cfg = env.env_cfg
-    return np.array([])
+    rs = np.array(
+        [0, 0, 1, 0] * OurEnvConfig.MAX_FACTORIES_IN_ACTION_SPACES
+        + [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1]
+        * OurEnvConfig.MAX_UNITS_IN_ACTION_SPACES
+    )
+    return rs
 
 
 # Controller class copied here since you won't have access to the luxai_s2

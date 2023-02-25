@@ -173,7 +173,7 @@ def main(args: TrainArgumentParser):
     )
 
     # PPO from SB3
-    model = PPO(
+    model = MaskablePPO(
         "MlpPolicy",
         env,
         n_steps=rollout_steps // args.n_envs,
@@ -226,7 +226,7 @@ def main_single_process(args: TrainArgumentParser):
     )
 
     # PPO from SB3
-    model = PPO(
+    model = MaskablePPO(
         "MlpPolicy",
         env,
         n_steps=rollout_steps // args.n_envs,
